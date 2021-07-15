@@ -1,58 +1,58 @@
 import pandas as pd
-
-import extract_features
-import preprocess
-import utils
-import cluster_analyzer
-import tokenizer
-
 from sklearn.cluster import DBSCAN
 
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
+from sumy.sumy.parsers.plaintext import PlaintextParser
+from sumy.sumy.nlp.tokenizers import Tokenizer
 
 from nltk.corpus import stopwords
-stop_words = list(stopwords.words('english'))
 
+from src import extract_features
+from src import preprocess
+from src import utils
+from src import cluster_analyzer
+from src import tokenizer
+
+stop_words = list(stopwords.words('english'))
 LANGUAGE = "english"
 
-def format_df (
-    text, sentences_text, sentences_lex, count_one_gram, count_two_gram, count_three_gram, count_article_keywords, result_tfisf, position_score, paragraph_score, number_citations, length_score, pos_score, ner_score, cluster_df):
+def format_df (text, features):
 
   scores = []
-  data = {i: [] for i, j in sentences_text.items()}
+  data = {i: [] for i, j in features['sentences_text'].items()}
 
-  for key, value in sentences_text.items():
+  for key, value in features['sentences_text'].items():
     
     data[key].append(value)
-    data[key].append(sentences_lex.get(key))
-    data[key].append(count_one_gram[text.index(key)])
-    data[key].append(count_two_gram[text.index(key)])
-    data[key].append(count_three_gram[text.index(key)])
-    data[key].append(count_article_keywords[text.index(key)])
-    data[key].append(result_tfisf[text.index(key)])
-    data[key].append(position_score[text.index(key)])
-    data[key].append(paragraph_score[text.index(key)])
-    data[key].append(number_citations[text.index(key)])
-    data[key].append(length_score[text.index(key)])
-    data[key].append(pos_score[text.index(key)])
-    data[key].append(ner_score[text.index(key)])
+    data[key].append(features['sentences_lex'].get(key))
+    data[key].append(features['onegram'][text.index(key)])
+    data[key].append(features['two_gram'][text.index(key)])
+    data[key].append(features['three_gram'][text.index(key)])
+    data[key].append(features['count_article_keywords'][text.index(key)])
+    data[key].append(features['result_tfisf'][text.index(key)])
+    data[key].append(features['position_score'][text.index(key)])
+    data[key].append(features['paragraph_score'][text.index(key)])
+    data[key].append(features['number_citations'][text.index(key)])
+    data[key].append(features['length_score'][text.index(key)])
+    data[key].append(features['pos_score'][text.index(key)])
+    data[key].append(features['ner_score'][text.index(key)])
 
+    
     try:
+      cluster_df = features['cluster_df']
       data[key].append(cluster_df.loc[cluster_df['sentence'] == text.index(key)]['dis_centroid'].values[0])
     except IndexError:
       data[key].append(0)
 
   columns = ['sentences', 'text_rank', 'lex_rank', 'count_one_gram', 'count_two_gram', 'count_three_gram', 'count_article_keywords', "tf-isf", 'position_score', 'paragraph_score', 'number_citations', 'length_score', 'pos_score', 'ner_score', 'dist_centroid']
-  features = pd.DataFrame(data.items())
-  scores = pd.DataFrame(features[1].to_list(), columns=columns[1:])
-  del features[1]
-  features = pd.concat([features, scores], axis=1)
+  df = pd.DataFrame(data.items())
+  scores = pd.DataFrame(df[1].to_list(), columns=columns[1:])
+  del df[1]
+  df = pd.concat([df, scores], axis=1)
 
-  return features
+  return df
 
 
-def main_features_df(text, xml, article_keywords, number_text, nlp_sm, nlp_md):
+def main(text, xml, article_keywords, number_text, nlp_sm, nlp_md):
 
   sentences = list(map(str, text))
   
@@ -130,7 +130,7 @@ def main_features_df(text, xml, article_keywords, number_text, nlp_sm, nlp_md):
 
   features = {'pos_score': pos_score, 'pos': pos, 'ner_score': ner_score, 'ners': ners,
                 'position_score': position_score, 'number_citations':number_citations,
-                'paragraph_score': paragraph_score,  'length_score': length_score, 'ngrams': ngrams,
+                'paragraph_score': paragraph_score,  'length_score': length_score, 'onegram': ngrams[0], 'two_gram': ngrams[1], 'three_gram': ngrams[2],
                 'count_article_keywords': count_article_keywords, 'summary_text':summary_text,
                 'sentences_text':sentences_text, 'summary_lex': summary_lex, 'sentences_lex':sentences_lex,
                 'cluster_df': cluster_df,  'result_tfisf':result_tfisf }

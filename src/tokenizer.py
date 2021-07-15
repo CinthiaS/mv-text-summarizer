@@ -1,7 +1,6 @@
 import spacy
-from pysbd.utils import PySBDFactory
 from bs4 import BeautifulSoup
-
+from pysbd.utils import PySBDFactory
 
 def split_words(sentence, nlp):
 

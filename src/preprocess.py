@@ -1,7 +1,8 @@
 import re
-import tokenizer
 from nltk.stem import PorterStemmer
-import extract_features
+
+from src import tokenizer
+from src import extract_features
 
 def remove_noise(text):
 

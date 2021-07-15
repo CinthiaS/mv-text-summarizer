@@ -1,3 +1,18 @@
+from __future__ import absolute_import
+from __future__ import division, print_function, unicode_literals
+
+import sys
+sys.path.insert(1, '/media/cinthia/Dados/Mestrado/mv-text-summarizer')
+
+from sumy.sumy.parsers.plaintext import PlaintextParser
+from sumy.sumy.nlp.tokenizers import Tokenizer
+from sumy.sumy.summarizers.lsa import LsaSummarizer as SummarizerLsa
+from sumy.sumy.summarizers.lex_rank import LexRankSummarizer as SummarizerLex
+from sumy.sumy.summarizers.sum_basic import SumBasicSummarizer as SummarizerSumBasic
+from sumy.sumy.summarizers.text_rank import TextRankSummarizer  as SummarizerTextrank
+from sumy.sumy.nlp.stemmers import Stemmer
+from sumy.sumy.utils import get_stop_words
+
 import pandas as pd
 from bs4 import BeautifulSoup
 from collections import Counter
@@ -7,20 +22,8 @@ import re
 import numpy as np
 import yake
 
-from __future__ import absolute_import
-from __future__ import division, print_function, unicode_literals
-
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer as SummarizerLsa
-from sumy.summarizers.lex_rank import LexRankSummarizer as SummarizerLex
-from sumy.summarizers.sum_basic import SumBasicSummarizer as SummarizerSumBasic
-from sumy.summarizers.text_rank import TextRankSummarizer  as SummarizerTextrank
-from sumy.nlp.stemmers import Stemmer
-from sumy.utils import get_stop_words
-
-import preprocess
-import tokenizer
+from src import preprocess
+from src import tokenizer
 
 stop_words = list(stopwords.words('english'))
 LANGUAGE = "english"

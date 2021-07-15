@@ -2,28 +2,27 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 import itertools
 import pandas as pd
 
-def evaluate_summary(candidate, reference, rouge, nubia):
+def evaluate_summary(candidate, reference, rouge):
 
     rouge_1 = max([rouge.rouge_n(summary=candidate, references=j, n=1) for j in reference])
     rouge_2 = max([rouge.rouge_n(summary=candidate, references=j, n=2) for j in reference])
     rouge_l = max([rouge.rouge_l(summary=candidate, references=j)for j in reference])
     #nubia_score = max([nubia.score(j, candidate) for j in reference])
-    nubia_score = 0
 
-    return rouge_1, rouge_2, rouge_l, nubia_score
+    return rouge_1, rouge_2, rouge_l
 
-def score_sentences (candidates, reference, rouge, nubia):
+def score_sentences (candidates, reference, rouge):
 
-    scores = {'rouge_1': [], 'rouge_2': [], 'rouge_l': [], 'nubia': []}
+    scores = {'rouge_1': [], 'rouge_2': [], 'rouge_l': []}
 
     for candidate in candidates:
 
-      rouge_1, rouge_2, rouge_l, nubia_score = evaluate_summary(candidate, reference, rouge, nubia)
+      rouge_1, rouge_2, rouge_l = evaluate_summary(candidate, reference, rouge)
 
       scores['rouge_1'].append(rouge_1)
       scores['rouge_2'].append(rouge_2)
       scores['rouge_l'].append(rouge_l)
-      scores['nubia'].append(0)
+      #scores['nubia'].append(0)
 
       #if rouge_1 == 0:
       #  scores['nubia'].append(0)
@@ -48,9 +47,9 @@ def create_label(scores_df):
 
     return label
 
-def main_create_label(candidate, reference, rouge, nubia):
+def main_create_label(candidate, reference, rouge):
 
-  scores = score_sentences(candidate, reference, rouge, nubia)
+  scores = score_sentences(candidate, reference, rouge)
 
   scores_df = pd.DataFrame(scores)
   label = create_label(scores_df)

@@ -9,3 +9,12 @@ scipy==1.4.1
 sumeval==0.2.2
 wget==3.2
 yake==0.4.8
+pytorch-transformers==1.2.0
+tensorflow==2.5.0
+keras==2.4.3
+imblearn==0.0
+spacy==2.1.8
+pycountry==20.7.3
+yake==0.4.8
+beautifulsoup==4.9.3
+pysb==0.3.4
