@@ -15,13 +15,13 @@ def split_sentences(texts):
   nlp = spacy.blank('en')
   nlp.add_pipe(PySBDFactory(nlp))
 
-  sent_intro = []
+  sentences = []
 
   for doc in texts:
     do = nlp(doc.strip())
-    sent_intro.append(list(do.sents))     
+    sentences.append(list(do.sents))    
 
-  return sent_intro
+  return sentences
 
 def tokenize_paragraph(text):
 

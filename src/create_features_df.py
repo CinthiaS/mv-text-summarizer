@@ -64,8 +64,6 @@ def main(text, xml, article_keywords, number_text, nlp_sm, nlp_md):
   number_citations = extract_features.count_citations(sentences_xml, bibs)
 
   if len(number_citations) != len(sentences):
-    print(len(number_citations))
-    print(len(sentences))
     raise ValueError('VectorSize')
 
   #paragraph position score

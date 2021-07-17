@@ -1,8 +1,16 @@
 import re
-from nltk.stem import PorterStemmer
 
+from nltk.stem import PorterStemmer
+from bs4 import BeautifulSoup
 from src import tokenizer
 from src import extract_features
+
+def xml_to_text(text):
+
+    soup = BeautifulSoup(text, 'html.parser')
+    text = soup.get_text()
+
+    return text
 
 def remove_noise(text):
 
@@ -67,13 +75,15 @@ def format_sentences_xml(sentences_xml):
   aux = []
 
   for i in sentences_xml:
-    if i.find("<p id=") != -1:
-      new_sentences = i.split("  ")
+    sentence = xml_to_text(i)
+    if not sentence.isspace() and  sentence != '' :
+      if i.find("<p id=") != -1:
+        new_sentences = i.split("  ")
 
-      for j in new_sentences:
-        aux.append(j)
-    else:
-      aux.append(i) 
+        for j in new_sentences:
+          aux.append(j)
+      else:
+        aux.append(i)
 
   return aux
 
@@ -83,18 +93,12 @@ def format_sentences(sentences):
 
   return sentences
 
-def exclude_bib(text, bibs):
-
-  for i in bibs:
-    text = text.replace(str(i), '')
-    
-  return text
-
 def format_article_keywords(keywords_article, number_text ):
 
   keys = extract_features.get_keywords(keywords_article[number_text])
   keys = keys.split("\n")
   keys = list(filter(None, keys))
+  keys =[remove_noise(i) for i in keys]
 
   last_key = keys[-1].split(' ')
   if last_key[0] == 'and':
@@ -111,3 +115,18 @@ def format_result(result):
     aux [str(key)] = float(value)
 
   return summary, aux
+
+def replace_bib(text, bibs):
+
+  for i in bibs:
+    text = text.replace(str(i), '')
+    
+  return text
+
+def remove_citations(xml, text):
+  
+  bibs = extract_features.get_citations(xml)
+  text = replace_bib(text, bibs)
+  text = format_text(text, post_processing=True)
+  
+  return text
