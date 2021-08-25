@@ -52,19 +52,20 @@ def format_df (text, features):
   return df
 
 
-def main(text, xml, article_keywords, number_text, nlp_sm, nlp_md):
+def main(text, xml, article_keywords, nlp_sm, nlp_md):
 
   sentences = list(map(str, text))
   
   #Count citations
-  bibs = extract_features.get_citations(xml)
+  #bibs = extract_features.get_citations(xml)
   sentences_xml = tokenizer.split_sentences([xml])
   sentences_xml = list(map(str, sentences_xml[0]))
   sentences_xml = preprocess.format_sentences_xml(sentences_xml)
-  number_citations = extract_features.count_citations(sentences_xml, bibs)
+  #number_citations = extract_features.count_citations(sentences_xml, bibs)
 
-  if len(number_citations) != len(sentences):
-    raise ValueError('VectorSize')
+  number_citations=[0] *len(sentences)
+  #if len(number_citations) != len(sentences):
+  #  raise ValueError('VectorSize')
 
   #paragraph position score
   paragraph_score = extract_features.pos_paragraph_score(sentences_xml)
@@ -103,7 +104,7 @@ def main(text, xml, article_keywords, number_text, nlp_sm, nlp_md):
   ngrams = [count_one_gram, count_two_gram, count_three_gram ]
 
   #article keywords
-  article_keywords_list = preprocess.format_article_keywords(article_keywords, number_text)
+  article_keywords_list = preprocess.format_article_keywords(article_keywords)
   count_article_keywords = extract_features.count_keywords(text, article_keywords_list)
 
   #TF-ISF
@@ -122,9 +123,10 @@ def main(text, xml, article_keywords, number_text, nlp_sm, nlp_md):
   embed = extract_features.sentence_embeddings(text_noise, nlp_md)
   df_embed = pd.DataFrame(embed)
 
+
   #Clustering 
   clustering = DBSCAN(eps=2, min_samples=2).fit(embed)
-  cluster_df = cluster_analyzer.cluster_analisys(df_embed, clustering, normalize=True, verbose=False)
+  cluster_df = cluster_analyzer.cluster_analisys(df_embed, clustering, normalize=False, verbose=False)
 
   features = {'pos_score': pos_score, 'pos': pos, 'ner_score': ner_score, 'ners': ners,
                 'position_score': position_score, 'number_citations':number_citations,

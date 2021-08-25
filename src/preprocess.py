@@ -16,7 +16,10 @@ def remove_noise(text):
 
   text = re.sub("^\d+\s|\s\d+\s|\s\d+$", " ", text)
   text = re.sub(r'\([^)]*\)', '', text)
+  text = re.sub('(?<=<title>)(.*?)(?=</title>)', '', text)
   text = re.sub('[^A-Za-z0-9]+', ' ', text)
+  text = re.sub(r'[\t\n\r]', '', text)
+
   text = text.lower()
 
   return text
@@ -58,6 +61,10 @@ def format_text(text, post_processing=False):
   text = text.replace(".<xref", ". <xref")
   text = text.replace("</p>","</p> ")
   text = text.replace('.</p>', "</p>.")
+  if post_processing == False:
+    text = re.sub('(?<=<title>)(.*?)(?=</title>)', '', text)
+
+
   if post_processing:
     text = text.replace("-", " ")
     text = text.replace("–", '')
@@ -65,8 +72,10 @@ def format_text(text, post_processing=False):
     text = text.replace("()", "")
     text = text.replace("[,]", "")
     text = text.replace("[]", "")
+    text = text.replace("(;)", "")
     text = text.replace("(; )", "")
-    text = text.replace("(; )", "")
+    text = re.sub(r' +', " ", text)
+    text = text.strip()
 
   return text
 
@@ -93,9 +102,9 @@ def format_sentences(sentences):
 
   return sentences
 
-def format_article_keywords(keywords_article, number_text ):
+def format_article_keywords(keywords_article ):
 
-  keys = extract_features.get_keywords(keywords_article[number_text])
+  keys = extract_features.get_keywords(keywords_article)
   keys = keys.split("\n")
   keys = list(filter(None, keys))
   keys =[remove_noise(i) for i in keys]

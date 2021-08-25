@@ -33,7 +33,7 @@ def get_hiperparametrs_knn(X_train, y_train, parameters):
 
   return knnsearch
 
-def get_hiperparametrs_rf(X_train, y_train, parameters=None):
+def get_hiperparametrs_rf(X_train, y_train, parameters):
   
   parameters = {'n_estimators': [10, 20, 40, 80, 100, 150, 200],
               'max_features':('sqrt', 'log2', 'auto'),

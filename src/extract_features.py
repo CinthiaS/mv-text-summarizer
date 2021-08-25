@@ -40,7 +40,7 @@ def count_citations(sentences, bibs):
 
   result = []
   for sentence in sentences:
-    count = [len(re.findall(str(i).replace("(", "\(").replace(")", "\)").replace("[", "\[").replace("]", "\]"), str(sentence))) for i in bibs]
+    count = [len(re.findall(re.escape(str(i)), re.escape(str(sentence)))) for i in bibs]
     result.append(np.sum(count))
 
   return result
@@ -131,7 +131,7 @@ def count_keywords(text, keywords):
   for i in text:
     count = 0
     for j in keywords:
-      count += len(re.findall(j, i))
+      count += len(re.findall(re.escape(str(j)), re.escape(str(i))))
     n_keywords.append(count)
 
   return n_keywords

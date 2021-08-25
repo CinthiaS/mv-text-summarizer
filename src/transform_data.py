@@ -1,12 +1,13 @@
 from nltk.tokenize import sent_tokenize, word_tokenize
 import itertools
 import pandas as pd
+import numpy as np
 
 def evaluate_summary(candidate, reference, rouge):
 
-    rouge_1 = max([rouge.rouge_n(summary=candidate, references=j, n=1) for j in reference])
-    rouge_2 = max([rouge.rouge_n(summary=candidate, references=j, n=2) for j in reference])
-    rouge_l = max([rouge.rouge_l(summary=candidate, references=j)for j in reference])
+    rouge_1 = np.max([rouge.rouge_n(summary=candidate, references=j, n=1) for j in reference])
+    rouge_2 = np.max([rouge.rouge_n(summary=candidate, references=j, n=2) for j in reference])
+    rouge_l = np.max([rouge.rouge_l(summary=candidate, references=j)for j in reference])
     #nubia_score = max([nubia.score(j, candidate) for j in reference])
 
     return rouge_1, rouge_2, rouge_l
