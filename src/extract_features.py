@@ -25,6 +25,8 @@ import yake
 from src import preprocess
 from src import tokenizer
 
+
+
 stop_words = list(stopwords.words('english'))
 LANGUAGE = "english"
 SENTENCES_COUNT=2
@@ -35,6 +37,7 @@ def get_citations(text):
   bib = soup.findAll('xref')
 
   return bib
+
 
 def count_citations(sentences, bibs):
 
@@ -62,6 +65,7 @@ def ner(section, nlp):
 
   return count_ners, ners
 
+
 def postag(section, nlp):
 
   tags = []
@@ -87,6 +91,7 @@ def postag(section, nlp):
 
   return tags, pos
 
+
 def sentence_len(section, nlp):
   
   sentences_len = [len(tokenizer.split_words(i, nlp)) for i in section]
@@ -106,6 +111,7 @@ def get_position_score(section):
   
   return position_score
 
+
 def pos_paragraph_score(sentences):
 
   result = []
@@ -124,6 +130,7 @@ def keywords_yake(text, n=3, lan='en'):
   keywords = custom_kw_extractor.extract_keywords(text)
 
   return keywords
+
 
 def count_keywords(text, keywords):
 

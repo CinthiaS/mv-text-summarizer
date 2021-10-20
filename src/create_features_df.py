@@ -20,6 +20,7 @@ def format_df (text, features):
   scores = []
   data = {i: [] for i, j in features['sentences_text'].items()}
 
+
   for key, value in features['sentences_text'].items():
     
     data[key].append(value)
@@ -135,4 +136,4 @@ def main(text, xml, article_keywords, nlp_sm, nlp_md):
                 'sentences_text':sentences_text, 'summary_lex': summary_lex, 'sentences_lex':sentences_lex,
                 'cluster_df': cluster_df,  'result_tfisf':result_tfisf }
 
-  return features
+  return features, df_embed

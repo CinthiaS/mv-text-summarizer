@@ -1,6 +1,8 @@
 import spacy
 from bs4 import BeautifulSoup
 from pysbd.utils import PySBDFactory
+from numba import jit
+
 
 def split_words(sentence, nlp):
 
@@ -9,6 +11,7 @@ def split_words(sentence, nlp):
   for token in doc:
     tokens.append(token.text)
   return tokens
+
 
 def split_sentences(texts):
 

@@ -96,11 +96,13 @@ def format_sentences_xml(sentences_xml):
 
   return aux
 
+
 def format_sentences(sentences):
 
   sentences = [re.sub(r'^, +',' ', sentence).strip() for sentence in sentences]
 
   return sentences
+
 
 def format_article_keywords(keywords_article ):
 
@@ -115,6 +117,7 @@ def format_article_keywords(keywords_article ):
 
   return keys
 
+
 def format_result(result):
 
   summary = ' '.join(list(map(str, list(result[0]))))
@@ -124,6 +127,7 @@ def format_result(result):
     aux [str(key)] = float(value)
 
   return summary, aux
+
 
 def replace_bib(text, bibs):
 

@@ -3,6 +3,7 @@ import itertools
 import pandas as pd
 import numpy as np
 
+
 def evaluate_summary(candidate, reference, rouge):
 
     rouge_1 = np.max([rouge.rouge_n(summary=candidate, references=j, n=1) for j in reference])
@@ -11,6 +12,7 @@ def evaluate_summary(candidate, reference, rouge):
     #nubia_score = max([nubia.score(j, candidate) for j in reference])
 
     return rouge_1, rouge_2, rouge_l
+
 
 def score_sentences (candidates, reference, rouge):
 
@@ -33,6 +35,7 @@ def score_sentences (candidates, reference, rouge):
       #  scores['mean'].append( ((rouge_1 + nubia_score)/2) + rouge_2)
 
     return scores
+
 
 def create_label(scores_df):
 

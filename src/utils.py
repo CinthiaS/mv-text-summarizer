@@ -7,11 +7,13 @@ import pandas as pd
 from src import preprocess
 from src import loader
 
+
 def check(i):
-  if i == None:
-    return 0
-  else:
-    return i
+    if i == None:
+        return 0
+    else:
+        return i
+
 
 def save_batches(batch_files):
     
@@ -19,7 +21,7 @@ def save_batches(batch_files):
     for i in range(len(batch_files)):
         batches[i+1] =  list(batch_files[i])
 
-    with open('batches.json', 'w') as f:
+    with open('batches_500.json', 'w') as f:
         json.dump(batches, f)
 
 def create_batches(path_base, tam=45):
@@ -29,44 +31,87 @@ def create_batches(path_base, tam=45):
 
     return batch_files
 
-def load_batches(files, path_base):
+
+
+def load_batches(files, path_base, name_section):
 
     disct_list = {}
     cont = 1
 
     section_1 = []
-    section_2 = []
-    section_3 = []
-    section_4 = []
+    text = []
     keywords = []
 
-    texts = loader.load_files(path_base, files)
+    texts, files = loader.load_files(path_base, files)
 
     for i in texts:
+        
+        if name_section == 'introduction':
+            section_1.append(preprocess.format_intro(i.get('sec_abstract')))
+            text.append(preprocess.format_intro(i.get('sec_introduction')))
+        elif name_section == 'materials':
+            section_1.append(preprocess.format_intro(i.get('sec_abstract')))
+            text.append(preprocess.format_intro(i.get('sec_materials_and_methods')))
+        elif name_section == 'conclusion':
+            section_1.append(preprocess.format_intro(i.get('sec_abstract')))
+            text.append(preprocess.format_intro(i.get('sec_results_and_conclusion')))
 
-        #name = files[cont-1].replace(".json", "")
-        #disct_list[name] = i
-
-        #if cont != save_each == 0:
-        #    with open('data/{}.json'.format(i), 'w') as f:
-        #        json.dump(disct_list, f)
-        #    disct_list = {}
-        #    cont = 1
-
-        section_1.append(preprocess.format_intro(i.get('sec_abstract')))
-        section_2.append(preprocess.format_intro(i.get('sec_introduction')))
-        section_3.append(preprocess.format_intro(i.get('sec_materials_and_methods')))
-        section_4.append(preprocess.format_intro(i.get('sec_results_and_conclusion')))
         keywords.append(i.get('sec_keyword'))
+        
+    df = pd.DataFrame({'abstract': section_1, 'texts': text, 'keywords': keywords, 'name_files': files })
 
-    return section_1, section_2, section_3, section_4, keywords
+    return df
 
-def save_results(all_features, all_scores, number_text, batch, name_section='intro', verbose=False):
+def save_results(all_features, all_scores, all_embeddings, batch, name_section='intro', verbose=False):
     
-    features_df = pd.concat(all_features)
-    scores_df = pd.concat(all_scores)
+    try:
+    
+        features_df = pd.concat(all_features)
+        scores_df = pd.concat(all_scores)
+        embeddings_df = pd.concat(all_embeddings)
 
-    features_df.to_csv("../result/{}/features_{}_batch_{}.csv".format(
-       name_section, number_text, batch), index=False)
-    scores_df.to_csv("../result/{}/scores_{}_batch_{}.csv".format(
-       name_section, number_text, batch), index=False)
+        features_df.to_csv("../result/{}/features_batch_{}.csv".format(
+           name_section, batch), index=False)
+        scores_df.to_csv("../result/{}/scores_batch_{}.csv".format(
+           name_section, batch), index=False)
+        embeddings_df.to_csv("../result/{}/embeddings_batch_{}.csv".format(
+           name_section, batch), index=False)
+    
+    except ValueError:
+        
+        pass
+
+def join_dataset(X, y):
+    
+    features = X.copy()
+    features['rouge_1'] = y['rouge_1']
+    
+    return features
+
+def split_dataset (features, summ_items):
+
+    train = features.loc[~features['articles'].isin(summ_items)]
+    train.reset_index(inplace=True, drop=True)
+
+    test = features.loc[features['articles'].isin(summ_items)]
+    test.reset_index(inplace=True, drop=True)
+    
+    return train, test
+
+
+def save_json(dataset, name, path='.'):
+
+    with open('{}/{}.json'.format(path, name), 'w') as fp:
+        json.dump(dataset, fp)
+        
+def load_json(name, path='.'):
+
+    dataset = json.loads(open ('{}/{}.json'.format(path,name), "r").read())
+    return dataset
+    
+def save_results(results, path='.'):
+    
+    for i in results.keys():
+        
+        df = pd.DataFrame(results[i])
+        df.to_csv("{}/eval_{}.csv".format(path, i), index=False)

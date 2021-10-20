@@ -5,13 +5,16 @@ import glob
 
 from src import preprocess
 
+from numba import jit
+
+@jit
 def load_files(path_base, files):
 
     texts = []
     for file in files:
         texts.append(json.load(open('{}/{}'.format(path_base, file))))
 
-    return texts
+    return texts, files
 
 def get_section(texts, section_name, preprocessed=True):
 
@@ -25,9 +28,17 @@ def get_section(texts, section_name, preprocessed=True):
 def read_features(path="../result/features_*.csv"):
 
     path_files = glob.glob(path)
-    features = [pd.read_csv(p) for p in path_files]
-    df = pd.concat(features).reset_index(drop=True)
+    features = []
+    scores = []
     
-    return df
+    for p in path_files:
+        features.append(pd.read_csv(p))
+        scores.append(pd.read_csv(p.replace("features", "scores")))
+              
+    features = pd.concat(features).reset_index(drop=True)
+    scores = pd.concat(scores).reset_index(drop=True)
+    
+    return features, scores
+
 
 

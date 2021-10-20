@@ -3,7 +3,6 @@ import numpy as np
 from scipy import spatial
 from sklearn.preprocessing import StandardScaler
 
-
 def cluster_analisys(df_embed, clustering, normalize=True, verbose=False):
 
   data = {"sentence": [], 'dis_centroid': []}
