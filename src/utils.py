@@ -70,11 +70,11 @@ def save_results(all_features, all_scores, all_embeddings, batch, name_section='
         scores_df = pd.concat(all_scores)
         embeddings_df = pd.concat(all_embeddings)
 
-        features_df.to_csv("../result/{}/features_batch_{}.csv".format(
+        features_df.to_csv("../result/{}/features_{}.csv".format(
            name_section, batch), index=False)
-        scores_df.to_csv("../result/{}/scores_batch_{}.csv".format(
+        scores_df.to_csv("../result/{}/scores_{}.csv".format(
            name_section, batch), index=False)
-        embeddings_df.to_csv("../result/{}/embeddings_batch_{}.csv".format(
+        embeddings_df.to_csv("../result/{}/embeddings_{}.csv".format(
            name_section, batch), index=False)
     
     except ValueError:
@@ -109,7 +109,7 @@ def load_json(name, path='.'):
     dataset = json.loads(open ('{}/{}.json'.format(path,name), "r").read())
     return dataset
     
-def save_results(results, path='.'):
+def save_results_eval(results, path='.'):
     
     for i in results.keys():
         

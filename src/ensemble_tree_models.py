@@ -1,5 +1,3 @@
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.ensemble import RandomForestRegressor
 from src import tunning_hyperparametrs as th
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
@@ -7,21 +5,13 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import AdaBoostClassifier
 import pickle
+import joblib
 
-
-def tunning(model,dataset, X, y, parameters=None):
-    
-    if parameters == None:
-     
-        parameters = {'n_estimators': [50,  100, 200],
-              'min_samples_leaf':[5, 10, 20],
-              'min_samples_split':[10, 20, 40],
-              'max_depth':[ 5, 7, 20]
-              }
+def tunning(model, X, y, section, path_to_save='models', parameters=None):
 
     search = th.randomized_search (parameters, model, X, y)
+    joblib.dump(search, '{}/{}_{}.pkl'.format(path_to_save, model, section))
 
-    print("\n Random Forest Hiperparâmetros")
     print("Num estimators: {}".format(search.best_estimator_.n_estimators))
     print("Min samples leaf: {}".format(search.best_estimator_.min_samples_leaf))
     print("Min samples splot: {}".format(search.best_estimator_.min_samples_split))
@@ -30,65 +20,77 @@ def tunning(model,dataset, X, y, parameters=None):
 
     return search
 
-def pipeline(name_model, dataset, X, y, parameters=None):
+def pipeline(dataset, name_model, section, n_jobs=-1, parameters=None):
     
     if name_model == "gb":
         model = GradientBoostingClassifier()
     elif name_model == "rf":
-        model = RandomForestClassifier()
+        model = RandomForestClassifier(n_jobs=n_jobs)
+    elif name_model == 'ab':
+        model = AdaBoostClassifier()
+    elif name_model == 'knn':
+        model = KNeighborsClassifier(n_jobs=n_jobs)
+        
+    X = dataset[section][0]
+    y = dataset[section][2]
 
-    search=tunning(model, dataset, X, y, parameters=None)
+    search=tunning(model, X, y, section, parameters=parameters)
     
-    model = fit_model(
-        name_model, X, y, dataset,
-        n_estimators=search.best_estimator_.n_estimators,
-        min_samples_leaf=search.best_estimator_.min_samples_leaf,
-        min_samples_split=search.best_estimator_.min_samples_split,
-        max_depth=search.best_estimator_.max_depth)
-    
-    return model, search
+    return  search
 
 
-def gb_classifier(X_train, y_train, section, n_estimators=None, min_samples_leaf=None, min_samples_split=None, max_depth=None):
+def gb_classifier(
+    X_train, y_train, section, n_estimators=None, min_samples_leaf=None,
+    min_samples_split=None, max_depth=None, path_to_save='models'):
     
     gb = GradientBoostingClassifier(
             n_estimators=n_estimators,
             min_samples_leaf=min_samples_leaf,
             min_samples_split=min_samples_split,
-            max_depth=max_depth)
+            max_depth=max_depth, n_jobs=n_jobs)
     
     gb.fit(X_train, y_train)
     
-    pickle.dump(gb, open('gb_{}'.format(section), 'wb'))
+    pickle.dump(gb, open('{}/gb_{}'.format(path_to_save, section), 'wb'))
     
     return gb
 
-def rf_classifier(X_train, y_train, section, n_estimators=None, min_samples_leaf=None, min_samples_split=None, max_depth=None):
+def rf_classifier(
+        X_train, y_train, section, n_estimators=None, min_samples_leaf=None,
+        min_samples_split=None, max_depth=None, n_jobs=-1, path_to_save='models'):
     
     rf = RandomForestClassifier(
             n_estimators=n_estimators,
             min_samples_leaf=min_samples_leaf,
             min_samples_split=min_samples_split,
-            max_depth=max_depth)
+            max_depth=max_depth, n_jobs=n_jobs,)
     
     rf.fit(X_train, y_train)
-    pickle.dump(rf, open('rf_{}'.format(section), 'wb'))
+    pickle.dump(rf, open('{}/rf_{}'.format(path_to_save, section), 'wb'))
     
     return rf
 
-def ab_classifier(X_train, y_train, section, n_estimators=100):
+def ab_classifier(X_train, y_train, section, n_estimators=100, path_to_save='models'):
 
-    ab = AdaBoostClassifier(n_estimators=100)
+    ab = AdaBoostClassifier(n_estimators=n_estimators)
     ab.fit(X_train, y_train)
-    pickle.dump(ab, open('ab_{}'.format(section), 'wb'))
+    pickle.dump(ab, open('{}/ab_{}'.format(path_to_save, section), 'wb'))
     
     return ab
 
-def knn_classifier(X_train, y_train, section, n_neighbors=5):
+def svm_classifier(X_train, y_train, section, n_estimators=100, path_to_save='models'):
 
-    knn = KNeighborsClassifier(n_neighbors=n_neighbors)
+    ab = SVC()
+    ab.fit(X_train, y_train)
+    pickle.dump(ab, open('{}/svm_{}'.format(path_to_save, section), 'wb'))
+    
+    return ab
+
+def knn_classifier(X_train, y_train, section, n_neighbors=5, n_jobs=-1, path_to_save='models'):
+
+    knn = KNeighborsClassifier(n_neighbors=n_neighbors, n_jobs=n_jobs)
     knn.fit(X_train, y_train)
-    pickle.dump(knn, open('knn_{}'.format(section), 'wb'))
+    pickle.dump(knn, open('{}/knn_{}'.format(path_to_save, section), 'wb'))
     
     return knn
 
@@ -103,8 +105,8 @@ def pipeline_classifiers(X_train, y_train, section, name_models=['knn', 'gb', 'r
             trained.append(knn)
         elif i == 'gb':
             gb = gb_classifier(
-                X_train, y_train, section, n_estimators=100, min_samples_leaf=10,
-                min_samples_split=20, max_depth=20)
+                X_train, y_train, section, n_estimators=200, min_samples_leaf=20,
+                min_samples_split=40, max_depth=20)
             trained.append(gb)
         elif i == 'rf':
             rf = rf_classifier(

@@ -5,9 +5,6 @@ import glob
 
 from src import preprocess
 
-from numba import jit
-
-@jit
 def load_files(path_base, files):
 
     texts = []

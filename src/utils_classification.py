@@ -4,7 +4,7 @@ from sklearn.metrics import matthews_corrcoef
 from collections import Counter
 
 import seaborn as sns
-sns.set_theme(style="whitegrid")
+#sns.set_theme(style="whitegrid")
 
 def create_label(scores_df):
 

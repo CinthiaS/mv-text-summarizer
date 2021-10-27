@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import json
 
+from joblib import Parallel, delayed
 from imblearn.under_sampling import RandomUnderSampler
 
 from src import normalization
@@ -90,3 +91,25 @@ def main_create_dataset(columns_name, sections):
 
         
     return dataset
+
+
+
+def create_dataset_pl(columns_name, section):
+    
+    summ_items = list(pd.read_csv("indices_summ.csv")['summ'])
+
+    if section == 'concat':
+        X_train, X_test, y_train, y_test = concat_sections(dataset=section, columns_name=columns_name, label_column='bin')
+            
+    else:
+        X_train, X_test, y_train, y_test = create_data_classification(
+                dataset=section, columns_name=columns_name, summ_items=summ_items, label_column='bin')
+        
+    return [X_train, X_test, y_train, y_test]
+
+
+def main_par(columns_name, sections):
+    
+    result = Parallel(n_jobs=-1, backend="multiprocessing")(delayed(create_dataset_pl)(columns_name, section) for section in sections)
+    
+    return result

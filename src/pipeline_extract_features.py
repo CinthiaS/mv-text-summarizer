@@ -8,7 +8,7 @@ import spacy
 import nltk
 import numpy as np
 import json
-import smogn
+
 import seaborn as sns
 import pickle
 
@@ -22,9 +22,6 @@ rouge = RougeCalculator(stopwords=True, lang="en")
 
 from timeit import default_timer as timer  
 
-%load_ext autoreload
-%autoreload 2
-
 from src import preprocess
 from src import extract_features
 from src import tokenizer
@@ -32,9 +29,8 @@ from src import create_features_df
 from src import transform_data
 from src import loader
 from src import utils
-from src import mlp
-from src import gradient_boost
-from src import random_forest
+#from src import gradient_boost
+#from src import random_forest
 from sklearn.preprocessing import StandardScaler
 
 import matplotlib.pyplot as plt
@@ -45,6 +41,9 @@ from sklearn.model_selection import train_test_split
 import warnings
 warnings.filterwarnings("ignore")
 
+nlp_sm = spacy.load('en_core_web_sm')
+nlp_md = spacy.load('en_core_web_md')
+
 def array_to_df(array, columns_name):
     
     if (array.size != 0):
@@ -52,20 +51,9 @@ def array_to_df(array, columns_name):
 
     return pd.DataFrame(columns=columns_name)
 
-def extract_features_batches(batches, path_base, name_section, initial_batch=0,verbose=True):
-
-    cont = initial_batch
-
-    print("Name section: " + name_section)
-    vfunc = np.vectorize(extract_features_file)
-    
-    print("Iniciando a extração de features...")
-    
-    for batch in batches:
+def extract_features_batches(
+    vfunc, batch, path_base, name_section, features_columns, scores_columns, embeddings_columns, verbose=True):
         
-        if verbose:
-            print("Batch: {} \n".format(cont))
-    
         #Load Files
         df = utils.load_batches(
             batch, path_base, name_section)
@@ -74,23 +62,23 @@ def extract_features_batches(batches, path_base, name_section, initial_batch=0,v
             print("Total de arquivos: {} \n".format(df.shape))
 
         #Extract Features
-        start = timer()
+        #start = timer()
         features, scores, embeddings = vfunc(df['abstract'], df['texts'], df['keywords'], df['name_files'])
-        print("Time:", timer()-start)
+        #print("Time:", timer()-start)
         
         # Convert numpy array to dataframe
         features = [array_to_df(features[i], features_columns) for i in range(len(features))]
         scores = [array_to_df(scores[i], scores_columns) for i in range(len(scores))]
         embeddings = [array_to_df(embeddings[i], embeddings_columns) for i in range(len(scores))]
                     
-        print("Quantidade de arquivos processados: {}".format(len(features)))
-        print("Saving Results")
+        #print("Quantidade de arquivos processados: {}".format(len(features)))
+        #print("Saving Results")
 
+        
         #Save Results
         utils.save_results(
-        features, scores, embeddings,batch=cont, name_section=name_section, verbose=False)
+        features, scores, embeddings, batch=batch[0].replace('.json', ''), name_section=name_section, verbose=False)
 
-        cont+=1
     
 def extract_features_file(reference, section, keywords, number_text, verbose=False):
     
