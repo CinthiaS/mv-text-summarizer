@@ -15,6 +15,9 @@ from sklearn.metrics import classification_report
 import numpy as np
 import pandas as pd
 
+from tensorflow.keras.utils import to_categorical
+
+
 def scheduler(epoch, lr):
     if epoch < 10:
         return lr
@@ -108,24 +111,27 @@ def main_train_nn(dataset, sections, parameters, train=True, verbose=False):
             print("\n{}".format(section))
 
         if section == 'concat':
-            model = mlp_classifier.nn_concat()
+            model = nn_concat()
         elif section == 'introduction':
-            model = mlp_classifier.nn_intro()
+            model = nn_intro()
         elif section == 'materials':
-            model = mlp_classifier.nn_mat()
+            model = nn_mat()
         elif section == 'conclusion':
-            model = mlp_classifier.nn_conc()
+            model = nn_conc()
 
         X_train = dataset[section][0]
         y_train = dataset[section][2]
+        one_hot_label = to_categorical(y_train)
 
         test_size, epochs, batch_size =parameters.get(section)
 
-        model, history = train_nn(model, X_train, y_train, test_size=test_size, epochs=epochs, batch_size=batch_size, verbose=verbose)
-
-        mlp_classifier.save_nn(model, "nn_model_{}".format(section))
         
-        models[sections] = model
+        
+        model, history = train_nn(model, X_train, one_hot_label, test_size=test_size, epochs=epochs, batch_size=batch_size, verbose=verbose)
+
+        save_nn(model, "nn_model_{}".format(section))
+        
+        models[section] = model
             
     return models
 
@@ -159,10 +165,9 @@ def nn_concat():
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(.3))
     model.add(Dense(128, activation='relu'))
-    model.add(Dropout(.2))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(2, activation='sigmoid'))
 
-    model.compile(loss='binary_crossentropy', optimizer=keras.optimizers.Adam(
+    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(
             learning_rate=0.001), metrics=['accuracy', keras.metrics.AUC()])
     
     return model
@@ -177,9 +182,9 @@ def nn_intro():
     model.add(Dense(256, activation='relu'))
     model.add(Dropout(.3))
     model.add(Dense(128, activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(2, activation='sigmoid'))
 
-    model.compile(loss='binary_crossentropy', optimizer=keras.optimizers.Adam(
+    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(
             learning_rate=0.001), metrics=['accuracy', keras.metrics.AUC()])
     
     return model
@@ -198,9 +203,9 @@ def nn_mat():
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(.3))
     model.add(Dense(128, activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(2, activation='sigmoid'))
     
-    model.compile(loss='binary_crossentropy', optimizer=keras.optimizers.Adam(
+    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(
         learning_rate=0.001), metrics=['accuracy', keras.metrics.AUC()])
     
     return model
@@ -219,9 +224,9 @@ def nn_conc():
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(.3))
     model.add(Dense(128, activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(2, activation='sigmoid'))
 
-    model.compile(loss='binary_crossentropy', optimizer=keras.optimizers.Adam(
+    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(
             learning_rate=0.001), metrics=['accuracy', keras.metrics.AUC()])
     
     return model

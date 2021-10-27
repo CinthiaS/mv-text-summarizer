@@ -7,19 +7,22 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import AdaBoostClassifier
 import pickle
+import joblib
 
 
-def tunning(model,dataset, X, y, parameters=None):
+
+def tunning(model, X, y, section, parameters=None):
     
     if parameters == None:
      
         parameters = {'n_estimators': [50,  100, 200],
-              'min_samples_leaf':[5, 10, 20],
-              'min_samples_split':[10, 20, 40],
-              'max_depth':[ 5, 7, 20]
+              'min_samples_leaf':[5, 20, 100],
+              'min_samples_split':[10, 40, 200],
+              'max_depth':[ 5, 20, 50]
               }
 
     search = th.randomized_search (parameters, model, X, y)
+    joblib.dump(search, '{}_{}.pkl'.format(model, section))
 
     print("\n Random Forest Hiperparâmetros")
     print("Num estimators: {}".format(search.best_estimator_.n_estimators))
@@ -30,23 +33,19 @@ def tunning(model,dataset, X, y, parameters=None):
 
     return search
 
-def pipeline(name_model, dataset, X, y, parameters=None):
+def pipeline(dataset, name_model, section, parameters=None):
     
     if name_model == "gb":
         model = GradientBoostingClassifier()
     elif name_model == "rf":
         model = RandomForestClassifier()
+        
+    X = dataset[section][0]
+    y = dataset[section][2]
 
-    search=tunning(model, dataset, X, y, parameters=None)
+    search=tunning(model, X, y, section, parameters=None)
     
-    model = fit_model(
-        name_model, X, y, dataset,
-        n_estimators=search.best_estimator_.n_estimators,
-        min_samples_leaf=search.best_estimator_.min_samples_leaf,
-        min_samples_split=search.best_estimator_.min_samples_split,
-        max_depth=search.best_estimator_.max_depth)
-    
-    return model, search
+    return  search
 
 
 def gb_classifier(X_train, y_train, section, n_estimators=None, min_samples_leaf=None, min_samples_split=None, max_depth=None):
@@ -103,8 +102,8 @@ def pipeline_classifiers(X_train, y_train, section, name_models=['knn', 'gb', 'r
             trained.append(knn)
         elif i == 'gb':
             gb = gb_classifier(
-                X_train, y_train, section, n_estimators=100, min_samples_leaf=10,
-                min_samples_split=20, max_depth=20)
+                X_train, y_train, section, n_estimators=200, min_samples_leaf=20,
+                min_samples_split=40, max_depth=20)
             trained.append(gb)
         elif i == 'rf':
             rf = rf_classifier(
