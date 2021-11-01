@@ -6,17 +6,13 @@ from sklearn.svm import SVC
 from sklearn.ensemble import AdaBoostClassifier
 import pickle
 import joblib
+from joblib import Parallel, delayed
+from sklearn.neural_network import MLPClassifier
 
-def tunning(model, X, y, section, path_to_save='models', parameters=None):
+def tunning(model, X, y, name_model, section, path_to_save='models', parameters=None):
 
     search = th.randomized_search (parameters, model, X, y)
-    joblib.dump(search, '{}/{}_{}.pkl'.format(path_to_save, model, section))
-
-    print("Num estimators: {}".format(search.best_estimator_.n_estimators))
-    print("Min samples leaf: {}".format(search.best_estimator_.min_samples_leaf))
-    print("Min samples splot: {}".format(search.best_estimator_.min_samples_split))
-    print("Max depth: {}".format(search.best_estimator_.max_depth))
-    print("Best Score: {}".format(search.best_score_))
+    joblib.dump(search, '{}/search_{}_{}.pkl'.format(path_to_save, name_model, section))
 
     return search
 
@@ -34,98 +30,115 @@ def pipeline(dataset, name_model, section, n_jobs=-1, parameters=None):
     X = dataset[section][0]
     y = dataset[section][2]
 
-    search=tunning(model, X, y, section, parameters=parameters)
+    search=tunning(model, X, y, name_model, section, parameters=parameters)
     
     return  search
 
 
 def gb_classifier(
-    X_train, y_train, section, n_estimators=None, min_samples_leaf=None,
-    min_samples_split=None, max_depth=None, path_to_save='models'):
+    X_train, y_train, section,parameters, path_to_save='models'):
     
     gb = GradientBoostingClassifier(
-            n_estimators=n_estimators,
-            min_samples_leaf=min_samples_leaf,
-            min_samples_split=min_samples_split,
-            max_depth=max_depth, n_jobs=n_jobs)
+            n_estimators=parameters['gb'][section]['n_estimators'], 
+                min_samples_leaf=parameters['gb'][section]['min_samples_leaf'],
+                min_samples_split=parameters['gb'][section]['min_samples_split'],
+                max_depth=parameters['gb'][section]['max_depth'])
     
     gb.fit(X_train, y_train)
     
-    pickle.dump(gb, open('{}/gb_{}'.format(path_to_save, section), 'wb'))
+    pickle.dump(gb, open('{}/gb_{}.pkl'.format(path_to_save, section), 'wb'))
     
     return gb
 
 def rf_classifier(
-        X_train, y_train, section, n_estimators=None, min_samples_leaf=None,
-        min_samples_split=None, max_depth=None, n_jobs=-1, path_to_save='models'):
+        X_train, y_train, section, parameters, n_jobs=-1, path_to_save='models'):
     
     rf = RandomForestClassifier(
-            n_estimators=n_estimators,
-            min_samples_leaf=min_samples_leaf,
-            min_samples_split=min_samples_split,
-            max_depth=max_depth, n_jobs=n_jobs,)
+            n_estimators=parameters['rf'][section]['n_estimators'], 
+                min_samples_leaf=parameters['rf'][section]['min_samples_leaf'],
+                min_samples_split=parameters['rf'][section]['min_samples_split'],
+                max_depth=parameters['rf'][section]['max_depth'], n_jobs=n_jobs)
     
     rf.fit(X_train, y_train)
-    pickle.dump(rf, open('{}/rf_{}'.format(path_to_save, section), 'wb'))
+    
+    pickle.dump(rf, open('{}/rf_{}.pkl'.format(path_to_save, section), 'wb'))
     
     return rf
 
-def ab_classifier(X_train, y_train, section, n_estimators=100, path_to_save='models'):
+def ab_classifier(X_train, y_train, section, parameters, path_to_save='models'):
 
-    ab = AdaBoostClassifier(n_estimators=n_estimators)
+    ab = AdaBoostClassifier(
+        n_estimators=parameters['ab'][section]['n_estimators'])
     ab.fit(X_train, y_train)
-    pickle.dump(ab, open('{}/ab_{}'.format(path_to_save, section), 'wb'))
+    
+    pickle.dump(ab, open('{}/ab_{}.pkl'.format(path_to_save, section), 'wb'))
     
     return ab
 
-def svm_classifier(X_train, y_train, section, n_estimators=100, path_to_save='models'):
+def svm_classifier(X_train, y_train, section, parameters, path_to_save='models'):
 
-    ab = SVC()
-    ab.fit(X_train, y_train)
-    pickle.dump(ab, open('{}/svm_{}'.format(path_to_save, section), 'wb'))
+    svm = SVC()
+    svm.fit(X_train, y_train)
+    
+    pickle.dump(svm, open('{}/svm_{}.pkl'.format(path_to_save, section), 'wb'))
     
     return ab
 
-def knn_classifier(X_train, y_train, section, n_neighbors=5, n_jobs=-1, path_to_save='models'):
+def mlp_classifier(X_train, y_train, section, parameters, path_to_save='models'):
 
-    knn = KNeighborsClassifier(n_neighbors=n_neighbors, n_jobs=n_jobs)
+    mlp = MLPClassifier(
+        max_iter=parameters['mlp'][section]['max_iter'],
+        batch_size=parameters['mlp'][section]['batch_size'],
+        hidden_layer_sizes=parameters['mlp'][section]['hidden_layer_sizes'])
+    
+    mlp.fit(X_train, y_train)
+    
+    pickle.dump(mlp, open('{}/mlp_{}.pkl'.format(path_to_save, section), 'wb'))
+    
+    return mlp
+
+def knn_classifier(X_train, y_train, section, parameters, n_jobs=-1, path_to_save='models'):
+
+    knn = KNeighborsClassifier(
+        n_neighbors=parameters['knn'][section]['n_neighbors'], n_jobs=n_jobs)
     knn.fit(X_train, y_train)
-    pickle.dump(knn, open('{}/knn_{}'.format(path_to_save, section), 'wb'))
+    
+    pickle.dump(knn, open('{}/knn_{}.pkl'.format(path_to_save, section), 'wb'))
     
     return knn
 
-def pipeline_classifiers(X_train, y_train, section, name_models=['knn', 'gb', 'rf', 'ab']):
+def pipeline_classifiers(X_train, y_train, parameters, section, name_model):
     
-    trained = []
-    for i in name_models:
+    trained = {}
+    
+    if name_model == 'knn':
+        trained['knn'] = knn_classifier(
+                X_train, y_train, section, parameters)
         
-        if i == 'knn':
-            knn = knn_classifier(
-                X_train, y_train, section, n_neighbors=5)
-            trained.append(knn)
-        elif i == 'gb':
-            gb = gb_classifier(
-                X_train, y_train, section, n_estimators=200, min_samples_leaf=20,
-                min_samples_split=40, max_depth=20)
-            trained.append(gb)
-        elif i == 'rf':
-            rf = rf_classifier(
-                X_train, y_train, section, n_estimators=100, min_samples_leaf=10,
-                min_samples_split=20, max_depth=20)
-            trained.append(rf)
-        elif i == 'ab':
-            ab = ab_classifier(X_train, y_train, section, n_estimators=100)
-            trained.append(ab)
+    elif name_model == 'gb':
+        trained['gb'] = gb_classifier(
+                X_train, y_train, section, parameters)
+            
+    elif name_model == 'rf':   
+        trained['rf'] = rf_classifier(
+                X_train, y_train, section, parameters)
+            
+    elif name_model == 'ab':    
+        trained['ab'] = ab_classifier(X_train, y_train, section, parameters)
     
+    elif name_model == 'mlp':
+        trained['mlp'] = mlp_classifier(X_train, y_train, section, parameters)
+        
+        
     return trained
 
-def create_models(dataset, sections, name_models):
-
+def create_models(dataset, parameters, sections, name_models):
+    
     models = {}
 
     for section in sections:
-    
-        trained = pipeline_classifiers(dataset[section][0], dataset[section][2], section, name_models)
-        models[section] = trained
         
-    return models
+        for name_model in name_models:
+            
+            models[section] = pipeline_classifiers(
+                dataset[section][0], dataset[section][2], parameters, section, name_model)

@@ -33,7 +33,6 @@ def save_nn(model, name):
     
     model_json = model.to_json()
 
-
     with open("{}.json".format(name), "w") as json_file:
         json_file.write(model_json)
 
@@ -125,9 +124,9 @@ def main_train_nn(dataset, sections, parameters, train=True, verbose=False):
 
         test_size, epochs, batch_size =parameters.get(section)
 
-        
-        
-        model, history = train_nn(model, X_train, one_hot_label, test_size=test_size, epochs=epochs, batch_size=batch_size, verbose=verbose)
+        model, history = train_nn(
+            model, X_train, one_hot_label, test_size=test_size, epochs=epochs,
+            batch_size=batch_size, verbose=verbose)
 
         save_nn(model, "nn_model_{}".format(section))
         

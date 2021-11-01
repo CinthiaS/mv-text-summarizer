@@ -29,8 +29,11 @@ def read_features(path="../result/features_*.csv"):
     scores = []
     
     for p in path_files:
-        features.append(pd.read_csv(p))
-        scores.append(pd.read_csv(p.replace("features", "scores")))
+        try:
+            features.append(pd.read_csv(p))
+            scores.append(pd.read_csv(p.replace("features", "scores")))
+        except:
+            pass
               
     features = pd.concat(features).reset_index(drop=True)
     scores = pd.concat(scores).reset_index(drop=True)

@@ -64,34 +64,54 @@ def get_ref_summary(file_name, path_base):
     
     return reference
 
-def create_summaries(df, articles, name_model):
+def create_summaries(df, references, articles, name_models):
 
-    summaries = []
-
-    for article in articles:
+    df_summaries = pd.DataFrame()
+    
+    for name_model in name_models:
         
-        text = df.loc[df['articles'] == article]
-        summaries.append(' '.join(text.loc[text[name_model] == 1]['sentences'].values))
+        summaries = []
+
+        for article in articles:
+        
+            try: 
+                text = df.loc[df['articles'] == article]
+                summaries.append(' '.join(text.loc[text[name_model] == 1]['sentences'].values))
+            except TypeError:
+                summaries.append("")
+        
+        
+        df_summaries[name_model] = summaries
+    
+    df_summaries['references'] = references
      
-    return  summaries
+    return  df_summaries
 
-def create_summaries_df(name_model, intro_model, mat_model, conc_model, summ_items, references):
+def combine_summ(summaries_intro, summaries_mat, summaries_conc, references, name_models):
+    summaries_comb = pd.DataFrame()
+
+    for name_model in name_models:
     
-    summaries_intro = create_summaries(intro_model, summ_items, '{}_intro'.format(name_model))
-    summaries_mat = create_summaries(mat_model, summ_items, '{}_mat'.format(name_model))
-    summaries_conc = create_summaries(conc_model, summ_items, '{}_conc'.format(name_model))
+        summaries_comb[name_model] = summaries_intro[name_model] + summaries_mat[name_model] + summaries_conc[name_model]
     
+    summaries_comb['references'] = references
+    return summaries_comb    
 
-    summaries = pd.DataFrame({'articles': summ_items,
-                             'references': references,
-                             'summaries_intro': summaries_intro,
-                             'summaries_mat': summaries_mat,
-                             'summaries_conc':summaries_conc})
-
-    summaries["summaries_comb"] = summaries['summaries_intro'] + " " + summaries['summaries_mat']  + " " +  summaries['summaries_conc']
-    summaries.to_csv("summaries_{}.csv".format(name_model), index=False)
+def create_df(name_models, x_summ, y_true, predictions, section, proba=False):
+    
+    df = pd.DataFrame({'sentences': x_summ['sentences'],
+                       'rouge_1': list(y_true),
+                       'articles': x_summ['articles']})
+    
+    if proba == False:
+        for name_model in name_models:
+            df[name_model] = predictions[section][name_model].reshape(1, -1)[0]
+    else:
+        for name_model in name_models:
+            y_pred = [i[1] for i in predictions[section][name_model]]
+            df[name_model] = y_pred
         
-    return summaries
+    return df
         
 def rouge_metrics(candidate, reference):
 
@@ -101,34 +121,13 @@ def rouge_metrics(candidate, reference):
 
     return rouge_1, rouge_2, rouge_l
 
-def evaluate_summaries(df, sections):
+def evaluate_summaries(df, name_models):
 
     vfunc = np.vectorize(rouge_metrics)
     
-    for i in sections:
+    for name_model in name_models:
         
-        df['{}_r1'.format(i)],df['{}_r2'.format(i)],df['{}_rl'.format(i)] = vfunc(df['summaries_{}'.format(i)], df['references'])
-    
+        df['{}_r1'.format(name_model)],df['{}_r2'.format(name_model)],df['{}_rl'.format(name_model)] = vfunc(df[name_model], df['references'])
+        
     return df
 
-def pipeline_summarization(name_model, models, dataset, columns_name, summ_items, path_base, sections=['intro', 'mat', 'conc', 'concat']):
-    
-    results = []
-    
-    for i in dataset.keys():
-        
-        X = dataset.get(i)[1]
-        y = dataset.get(i)[3]
-        
-        results.append (labeling_sentences(
-        X, y, summ_items, model=models[i], name_model='{}_{}'.format(name_model, i),
-        columns_name=columns_name))
-
-
-    references = [get_ref_summary(i, path_base) for i in summ_items]
-    
-    summaries = create_summaries_df(name_model, results[0], results[1], results[2], summ_items, references)
-    
-    summaries = evaluate_summaries(summaries, sections=sections)
-    
-    return summaries, results[0], results[1], results[2]

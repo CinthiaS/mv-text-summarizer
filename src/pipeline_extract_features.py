@@ -61,23 +61,22 @@ def extract_features_batches(
         if verbose:
             print("Total de arquivos: {} \n".format(df.shape))
 
-        #Extract Features
-        #start = timer()
-        features, scores, embeddings = vfunc(df['abstract'], df['texts'], df['keywords'], df['name_files'])
-        #print("Time:", timer()-start)
+        
+        try:
+            #print(batch)
+            features, scores, embeddings = vfunc(df['abstract'], df['texts'], df['keywords'], df['name_files'])
         
         # Convert numpy array to dataframe
-        features = [array_to_df(features[i], features_columns) for i in range(len(features))]
-        scores = [array_to_df(scores[i], scores_columns) for i in range(len(scores))]
-        embeddings = [array_to_df(embeddings[i], embeddings_columns) for i in range(len(scores))]
-                    
-        #print("Quantidade de arquivos processados: {}".format(len(features)))
-        #print("Saving Results")
-
+            features = [array_to_df(features[i], features_columns) for i in range(len(features))]
+            scores = [array_to_df(scores[i], scores_columns) for i in range(len(scores))]
+            embeddings = [array_to_df(embeddings[i], embeddings_columns) for i in range(len(scores))]
         
-        #Save Results
-        utils.save_results(
-        features, scores, embeddings, batch=batch[0].replace('.json', ''), name_section=name_section, verbose=False)
+            if len(features[0]) > 0:            
+                utils.save_results(
+                    features, scores, embeddings, batch=batch[0].replace('.json', ''),
+                    name_section=name_section, verbose=False)
+        except KeyError as error:
+            pass
 
     
 def extract_features_file(reference, section, keywords, number_text, verbose=False):
@@ -112,12 +111,10 @@ def extract_features_file(reference, section, keywords, number_text, verbose=Fal
         scores_df, label = transform_data.main_create_label(sentences, sentences_ref, rouge)
         scores_df['label'] = label
         scores_df['number_text'] = [number_text]*len(scores_df)
-        
     
         features = features_df.to_numpy(dtype=object)
         scores = scores_df.to_numpy(dtype=object)
         embeddings = embeddings.to_numpy(dtype=object)
-        
 
         return features, scores, embeddings
 
@@ -125,6 +122,9 @@ def extract_features_file(reference, section, keywords, number_text, verbose=Fal
         out = pd.DataFrame().to_numpy(dtype=object)
         return out, out, out
     except ValueError as error:
+        out = pd.DataFrame().to_numpy(dtype=object)
+        return out, out, out
+    except KeyError as error:
         out = pd.DataFrame().to_numpy(dtype=object)
         return out, out, out
 
