@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import itertools
 import re
 import json
 from sumeval.metrics.rouge import RougeCalculator
@@ -8,19 +9,38 @@ rouge = RougeCalculator(stopwords=True, lang="en")
 from src import loader
 from src import preprocess
 
-def create_label(df, name_model):
+def create_label(df, name_model, k=3, sort_scores=True, ascending=False):
 
     label = [0 for i in range(len(df))]
+    
+    if sort_scores:
+        df = df.sort_values(name_model, ascending=ascending)
 
     j = 0
-    for index, row in df.sort_values(name_model, ascending=False).iterrows():
+    for index, row in df.iterrows():
         label[index] = 1
         j +=1
 
-        if j==3:
+        if j==k:
             break
 
     return label
+
+def binarize_proba(df, name_models, k=3, sort_scores=True, ascending=False):
+    
+    for name_model in name_models:
+
+        labels = []
+
+        for article in pd.unique(df['articles']):
+
+            aux = df.loc[df['articles'] == article].reset_index(drop=True)
+            labels.append(create_label(aux, name_model, k, sort_scores, ascending))
+
+        merged = list(itertools.chain(*labels))
+        df[name_model] = merged
+        
+    return df
 
 def labeling_sentences(X, y, articles, model, name_model, columns_name, scaler):
     
@@ -67,27 +87,33 @@ def get_ref_summary(file_name, path_base):
 def create_summaries(df, references, articles, name_models):
 
     df_summaries = pd.DataFrame()
+
     
     for name_model in name_models:
         
         summaries = []
+        articles_list = []
 
         for article in articles:
         
             try: 
                 text = df.loc[df['articles'] == article]
                 summaries.append(' '.join(text.loc[text[name_model] == 1]['sentences'].values))
+                articles_list.append(article)
             except TypeError:
                 summaries.append("")
         
         
         df_summaries[name_model] = summaries
     
+    
     df_summaries['references'] = references
-     
+    df_summaries['articles'] = articles
+    
+    
     return  df_summaries
 
-def combine_summ(summaries_intro, summaries_mat, summaries_conc, references, name_models):
+def combine_three_summ(summaries_intro, summaries_mat, summaries_conc, references, name_models):
     summaries_comb = pd.DataFrame()
 
     for name_model in name_models:
@@ -96,6 +122,18 @@ def combine_summ(summaries_intro, summaries_mat, summaries_conc, references, nam
     
     summaries_comb['references'] = references
     return summaries_comb    
+
+
+def combine_two_summ(df1, df2, references, name_models):
+    summaries_comb = pd.DataFrame()
+
+    for name_model in name_models:
+    
+        summaries_comb[name_model] = df1[name_model] + df2[name_model]
+    
+    summaries_comb['references'] = references
+    return summaries_comb    
+
 
 def create_df(name_models, x_summ, y_true, predictions, section, proba=False):
     

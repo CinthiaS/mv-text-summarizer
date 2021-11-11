@@ -93,6 +93,7 @@ def main(text, xml, article_keywords, nlp_sm, nlp_md):
   one_gram = extract_features.keywords_yake(pp_text, n=1, lan='en')
   two_gram = extract_features.keywords_yake(pp_text, n=2, lan='en')
   three_gram = extract_features.keywords_yake(pp_text, n=3, lan='en')
+ 
 
   one_gram = [key for key, _ in one_gram]
   two_gram = [key for key, _ in two_gram if len(key.split(' ')) > 1]
@@ -131,7 +132,8 @@ def main(text, xml, article_keywords, nlp_sm, nlp_md):
 
   features = {'pos_score': pos_score, 'pos': pos, 'ner_score': ner_score, 'ners': ners,
                 'position_score': position_score, 'number_citations':number_citations,
-                'paragraph_score': paragraph_score,  'length_score': length_score, 'onegram': ngrams[0], 'two_gram': ngrams[1], 'three_gram': ngrams[2],
+                'paragraph_score': paragraph_score,  'length_score': length_score,
+                'onegram': ngrams[0], 'two_gram': ngrams[1], 'three_gram': ngrams[2],
                 'count_article_keywords': count_article_keywords, 'summary_text':summary_text,
                 'sentences_text':sentences_text, 'summary_lex': summary_lex, 'sentences_lex':sentences_lex,
                 'cluster_df': cluster_df,  'result_tfisf':result_tfisf }

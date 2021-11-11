@@ -11,6 +11,7 @@ import json
 
 import seaborn as sns
 import pickle
+from pathlib import Path
 
 
 from bs4 import BeautifulSoup
@@ -53,6 +54,11 @@ def array_to_df(array, columns_name):
 
 def extract_features_batches(
     vfunc, batch, path_base, name_section, features_columns, scores_columns, embeddings_columns, verbose=True):
+    
+
+    my_file = Path("../result/{}/features_{}.csv".format(name_section, batch))
+    
+    if not my_file.is_file():
         
         #Load Files
         df = utils.load_batches(

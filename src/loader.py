@@ -22,8 +22,9 @@ def get_section(texts, section_name, preprocessed=True):
 
     return section
 
-def read_features(path="../result/features_*.csv"):
+def read_features(path, name="features"):
 
+    print(path)
     path_files = glob.glob(path)
     features = []
     scores = []
@@ -31,7 +32,7 @@ def read_features(path="../result/features_*.csv"):
     for p in path_files:
         try:
             features.append(pd.read_csv(p))
-            scores.append(pd.read_csv(p.replace("features", "scores")))
+            scores.append(pd.read_csv(p.replace(name, "scores")))
         except:
             pass
               

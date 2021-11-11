@@ -134,14 +134,15 @@ def keywords_yake(text, n=3, lan='en'):
 
 def count_keywords(text, keywords):
 
-  n_keywords = []
-  for i in text:
-    count = 0
-    for j in keywords:
-      count += len(re.findall(re.escape(str(j)), re.escape(str(i))))
-    n_keywords.append(count)
+    n_keywords = []
+    for i in text:
+        count = 0
+        for j in keywords:
+            count += len(re.findall(str(j), str(i)))
+        
+        n_keywords.append(count)
 
-  return n_keywords
+    return n_keywords
 
 def tfisf(text):
 

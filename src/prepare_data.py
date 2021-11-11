@@ -23,18 +23,26 @@ def prepare_concat_data(features, scores, columns_name, label_column='bin'):
     train = utils_clf.transform_to_classification(train)
     test = utils_clf.transform_to_classification(test)
     
+    train.to_csv("train.csv")
+    test.to_csv("test.csv")
+    
     X_train, y_train = RandomUnderSampler().fit_resample(train[columns_name], train[label_column])
     
     X_test = test[columns_name]
     y_test = test[label_column]
     
+    
     return X_train, X_test, y_train, y_test
 
-def concat_sections(dataset, columns_name, label_column='bin'):
+def concat_sections(dataset, columns_name, path_to_read, name_csv="features", label_column='bin'):
     
-    features_intro, scores_intro = loader.read_features(path="../result/{}/features_*.csv".format('introduction'))
-    features_mat, scores_mat = loader.read_features(path="../result/{}/features_*.csv".format('materials'))
-    features_conc, scores_conc = loader.read_features(path="../result/{}/features_*.csv".format('conclusion'))
+    print(path_to_read.format('introduction', name_csv))
+    features_intro, scores_intro = loader.read_features(
+        path=path_to_read.format('introduction', name_csv), name=name_csv)
+    features_mat, scores_mat = loader.read_features(
+        path=path_to_read.format('materials', name_csv), name=name_csv)
+    features_conc, scores_conc = loader.read_features(
+        path=path_to_read.format('conclusion', name_csv), name=name_csv)
     
     X_train_intro, X_test_intro, y_train_intro, y_test_intro = prepare_concat_data(features_intro, scores_intro, columns_name)
     X_train_mat, X_test_mat, y_train_mat, y_test_mat = prepare_concat_data(features_mat, scores_mat, columns_name)
@@ -52,9 +60,9 @@ def concat_sections(dataset, columns_name, label_column='bin'):
     
     return X_train, X_test, y_train, y_test
 
-def create_data_classification(dataset, columns_name, summ_items, label_column):
+def create_data_classification(dataset, columns_name, summ_items, path_to_read, name_csv="features", label_column='bin'):
     
-    features, scores = loader.read_features(path="../result/{}/features_*.csv".format(dataset))
+    features, scores = loader.read_features(path=path_to_read.format(dataset, name_csv),name=name_csv)
     
     data = utils.join_dataset(features, scores)
     train, test = utils.split_dataset (data, summ_items)
@@ -72,7 +80,7 @@ def create_data_classification(dataset, columns_name, summ_items, label_column):
     
     return X_train, X_test, y_train, y_test
 
-def main_create_dataset(columns_name, sections):
+def main_create_dataset(columns_name, sections, path_to_read, name_csv):
     
     summ_items = list(pd.read_csv("indices_summ.csv")['summ'])
 
@@ -81,35 +89,17 @@ def main_create_dataset(columns_name, sections):
     for section in sections:
 
         if section == 'concat':
-            X_train, X_test, y_train, y_test = concat_sections(dataset=section, columns_name=columns_name, label_column='bin')
+            X_train, X_test, y_train, y_test = concat_sections(
+                dataset=section, columns_name=columns_name, path_to_read=path_to_read,
+                name_csv=name_csv, label_column='bin')
             
         else:
             X_train, X_test, y_train, y_test = create_data_classification(
-                dataset=section, columns_name=columns_name, summ_items=summ_items, label_column='bin')
+                dataset=section, columns_name=columns_name, summ_items=summ_items,
+                path_to_read=path_to_read, name_csv=name_csv, label_column='bin')
         
         dataset[section] = [X_train, X_test, y_train, y_test]
 
         
     return dataset
 
-
-
-def create_dataset_pl(columns_name, section):
-    
-    summ_items = list(pd.read_csv("indices_summ.csv")['summ'])
-
-    if section == 'concat':
-        X_train, X_test, y_train, y_test = concat_sections(dataset=section, columns_name=columns_name, label_column='bin')
-            
-    else:
-        X_train, X_test, y_train, y_test = create_data_classification(
-                dataset=section, columns_name=columns_name, summ_items=summ_items, label_column='bin')
-        
-    return [X_train, X_test, y_train, y_test]
-
-
-def main_par(columns_name, sections):
-    
-    result = Parallel(n_jobs=-1, backend="multiprocessing")(delayed(create_dataset_pl)(columns_name, section) for section in sections)
-    
-    return result

@@ -21,11 +21,13 @@ def pipeline(dataset, name_model, section, n_jobs=-1, parameters=None):
     if name_model == "gb":
         model = GradientBoostingClassifier()
     elif name_model == "rf":
-        model = RandomForestClassifier(n_jobs=n_jobs)
+        model = RandomForestClassifier(n_jobs=n_jobs, class_weight=parameters['class_weight'])
     elif name_model == 'ab':
         model = AdaBoostClassifier()
     elif name_model == 'knn':
         model = KNeighborsClassifier(n_jobs=n_jobs)
+    elif name_model == 'svm':
+        model = SVC(class_weight=parameters['class_weight'])
         
     X = dataset[section][0]
     y = dataset[section][2]
@@ -55,9 +57,11 @@ def rf_classifier(
     
     rf = RandomForestClassifier(
             n_estimators=parameters['rf'][section]['n_estimators'], 
-                min_samples_leaf=parameters['rf'][section]['min_samples_leaf'],
-                min_samples_split=parameters['rf'][section]['min_samples_split'],
-                max_depth=parameters['rf'][section]['max_depth'], n_jobs=n_jobs)
+            min_samples_leaf=parameters['rf'][section]['min_samples_leaf'],
+            min_samples_split=parameters['rf'][section]['min_samples_split'],
+            max_depth=parameters['rf'][section]['max_depth'],
+            class_weight=parameters['rf'][section]['class_weight'],
+            n_jobs=n_jobs)
     
     rf.fit(X_train, y_train)
     
@@ -77,7 +81,11 @@ def ab_classifier(X_train, y_train, section, parameters, path_to_save='models'):
 
 def svm_classifier(X_train, y_train, section, parameters, path_to_save='models'):
 
-    svm = SVC()
+    svm = SVC(
+        kernel=parameters['svm'][section]['kernel'], 
+        degree=parameters['svm'][section]['degree'],
+        class_weight=parameters['svm'][section]['class_weight'])
+    
     svm.fit(X_train, y_train)
     
     pickle.dump(svm, open('{}/svm_{}.pkl'.format(path_to_save, section), 'wb'))
@@ -100,7 +108,8 @@ def mlp_classifier(X_train, y_train, section, parameters, path_to_save='models')
 def knn_classifier(X_train, y_train, section, parameters, n_jobs=-1, path_to_save='models'):
 
     knn = KNeighborsClassifier(
-        n_neighbors=parameters['knn'][section]['n_neighbors'], n_jobs=n_jobs)
+        n_neighbors=parameters['knn'][section]['n_neighbors'],
+        n_jobs=n_jobs)
     knn.fit(X_train, y_train)
     
     pickle.dump(knn, open('{}/knn_{}.pkl'.format(path_to_save, section), 'wb'))
@@ -114,20 +123,18 @@ def pipeline_classifiers(X_train, y_train, parameters, section, name_model):
     if name_model == 'knn':
         trained['knn'] = knn_classifier(
                 X_train, y_train, section, parameters)
-        
     elif name_model == 'gb':
         trained['gb'] = gb_classifier(
-                X_train, y_train, section, parameters)
-            
+                X_train, y_train, section, parameters)    
     elif name_model == 'rf':   
         trained['rf'] = rf_classifier(
                 X_train, y_train, section, parameters)
-            
     elif name_model == 'ab':    
         trained['ab'] = ab_classifier(X_train, y_train, section, parameters)
-    
     elif name_model == 'mlp':
         trained['mlp'] = mlp_classifier(X_train, y_train, section, parameters)
+    elif name_model == 'svm':
+        trained['svm'] = svm_classifier(X_train, y_train, section, parameters)
         
         
     return trained
