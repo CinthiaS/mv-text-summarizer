@@ -16,8 +16,8 @@ def tunning(model, X, y, name_model, section, path_to_save='models', parameters=
 
     return search
 
-def pipeline(dataset, name_model, section, n_jobs=-1, parameters=None):
-    
+def pipeline(dataset, name_model, section, parameters=None):
+
     if name_model == "gb":
         model = GradientBoostingClassifier()
     elif name_model == "rf":
@@ -28,12 +28,12 @@ def pipeline(dataset, name_model, section, n_jobs=-1, parameters=None):
         model = KNeighborsClassifier(n_jobs=n_jobs)
     elif name_model == 'svm':
         model = SVC(class_weight=parameters['class_weight'])
-        
+
     X = dataset[section][0]
     y = dataset[section][2]
 
-    search=tunning(model, X, y, name_model, section, parameters=parameters)
-    
+    search=tunning(model, X, y, section, parameters=None)
+
     return  search
 
 
@@ -136,7 +136,7 @@ def pipeline_classifiers(X_train, y_train, parameters, section, name_model):
     elif name_model == 'svm':
         trained['svm'] = svm_classifier(X_train, y_train, section, parameters)
         
-        
+   
     return trained
 
 def create_models(dataset, parameters, sections, name_models):

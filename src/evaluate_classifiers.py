@@ -20,8 +20,6 @@ def evaluate_classification(X_test, y_test, model, name_section, name_model, col
     report = pd.DataFrame(report).transpose()
     report.insert(loc=0, column='model', value=[name_model]*5)
     
-    mcc = matthews_corrcoef(y_test, y_pred)
-    
     if verbose:
         print("Report {}:\n{}\n".format(name_section, report))
 
@@ -95,9 +93,31 @@ def matthews(sections, dataset, predictions, name_models):
         
             aux[name_model] = matthews_corrcoef(y_test, predictions[section][name_model])
 
+    return predictions, results
+
+
+def roc_curve(sections, dataset):
+    
+    for section in sections:
         
-        result[section] = aux 
+    
+        X_test =  dataset[section][1]
+        y_test =  dataset[section][3]
+    
+        knn, gbc, rfc, abc = models.get(section)
+
+        rf = plot_roc_curve(rfc, X_test, y_test)
+        ab = plot_roc_curve(abc, X_test, y_test, ax=rf.ax_)
+        gb = plot_roc_curve(gbc, X_test, y_test, ax=ab.ax_)
+        knn = plot_roc_curve(knn, X_test, y_test, ax=gb.ax_)
+
+        knn.figure_.suptitle("ROC curve comparison - {}".format(section))
+        plt.show()
         
-    df = pd.DataFrame(result)
-        
-    return df
+def convert_pred(y_pred):
+    
+    y_pred[y_pred == 1] = 1
+    y_pred[y_pred == 0] = -1
+    
+    return y_pred
+    

@@ -1,12 +1,9 @@
-
-  
 from IPython.display import display_html 
 
 def display_results(results, section):
 
     space = "\xa0" * 10
 
-    
     df1 = results[section]['knn'].style.set_table_attributes("style='display:inline'").set_caption('knn_{}'.format(section))
     df2 = results[section]['ab'].style.set_table_attributes("style='display:inline'").set_caption('ab_{}'.format(section))
     df3 = results[section]['rf'].style.set_table_attributes("style='display:inline'").set_caption('rf_{}'.format(section))
