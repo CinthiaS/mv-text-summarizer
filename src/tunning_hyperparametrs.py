@@ -1,40 +1,28 @@
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import precision_score
+import pickle
+import joblib
 
-def randomized_search (parameters, model, X_train, y_train, n_iter=100, random_state=42):
+def randomized_search (parameters, model, X_train, y_train, scoring='precision', n_iter=100, random_state=42):
     
     rsearch = RandomizedSearchCV(
         estimator=model, param_distributions=parameters,
-        n_iter=n_iter, random_state=random_state,
-        scoring='precision')
+        n_iter=n_iter, scoring=scoring)
+
     rsearch.fit(X_train, y_train.ravel())
     
     return rsearch
 
-def get_hiperparametrs_svm(X_train, y_train, parameters):
+def pipeline_tunning(dataset, models, sections, all_parameters, path_to_save):
 
-    svmsearch = randomized_search (parameters, SVC(class_weight=parameters['class_weight']), X_train, y_train)
+    for section in sections:
+        
+        for name_model in models.keys():
+            
+            parameters = all_parameters[section][name_model]
+            model = models[name_model]
 
-    return svmsearch
+            X = dataset[section][0]
+            y = dataset[section][2]
 
-def get_hiperparametrs_knn(X_train, y_train, parameters):
-
-    knnsearch = randomized_search (parameters, KNeighborsClassifier(), X_train, y_train)
-
-    return knnsearch
-
-def get_hiperparametrs_rf(X_train, y_train, parameters):
-  
-    rfsearch = randomized_search (parameters, RandomForestClassifier(class_weight=parameters['class_weight']), X_train, y_train)
-
-    return rfsearch
-
-def get_hiperparametrs_gb(X_train, y_train, parameters):
-    
-    gbsearch = randomized_search (parameters, GradientBoostingClassifier(), X_train, y_train)
-
-    return gbsearch
+            search = randomized_search (parameters, model, X, y)
+            joblib.dump(search, '{}/search_{}_{}.pkl'.format(path_to_save, name_model, section))

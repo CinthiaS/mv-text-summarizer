@@ -36,7 +36,6 @@ def prepare_concat_data(features, scores, columns_name, label_column='bin'):
 
 def concat_sections(dataset, columns_name, path_to_read, name_csv="features", label_column='bin'):
     
-    print(path_to_read.format('introduction', name_csv))
     features_intro, scores_intro = loader.read_features(
         path=path_to_read.format('introduction', name_csv), name=name_csv)
     features_mat, scores_mat = loader.read_features(
@@ -78,7 +77,7 @@ def create_data_classification(dataset, columns_name, summ_items, path_to_read, 
     X_test = scaler.transform(test[columns_name])
     y_test = test[label_column]
     
-    return X_train, X_test, y_train, y_test
+    return X_train, X_test, y_train, y_test, train, test
 
 def main_create_dataset(columns_name, sections, path_to_read, name_csv):
     
@@ -94,11 +93,11 @@ def main_create_dataset(columns_name, sections, path_to_read, name_csv):
                 name_csv=name_csv, label_column='bin')
             
         else:
-            X_train, X_test, y_train, y_test = create_data_classification(
+            X_train, X_test, y_train, y_test, train, test = create_data_classification(
                 dataset=section, columns_name=columns_name, summ_items=summ_items,
                 path_to_read=path_to_read, name_csv=name_csv, label_column='bin')
         
-        dataset[section] = [X_train, X_test, y_train, y_test]
+        dataset[section] = [X_train, X_test, y_train, y_test, train, test]
 
         
     return dataset

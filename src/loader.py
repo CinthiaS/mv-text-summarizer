@@ -35,9 +35,13 @@ def read_features(path, name="features"):
             scores.append(pd.read_csv(p.replace(name, "scores")))
         except:
             pass
+        
               
     features = pd.concat(features).reset_index(drop=True)
     scores = pd.concat(scores).reset_index(drop=True)
+    
+    features.to_csv("all_features.csv", index=False)
+    scores.to_csv("all_scores.csv", index=False)
     
     return features, scores
 

@@ -3,13 +3,13 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Flatten, Dropout, InputLayer
 from tensorflow.keras.models import Sequential
 from sklearn.model_selection import train_test_split
-from keras.wrappers.scikit_learn import KerasClassifier
+#from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from tensorflow.keras.models import model_from_json
 
-from keras.callbacks import LearningRateScheduler
-from keras.callbacks import ReduceLROnPlateau
+#from keras.callbacks import LearningRateScheduler
+#from keras.callbacks import ReduceLROnPlateau
 from sklearn.metrics import classification_report
 
 import numpy as np
@@ -24,9 +24,8 @@ def scheduler(epoch, lr):
     else:
         return lr * tf.math.exp(-0.1)
 
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                              patience=5, min_lr=0.0001)
-lr_sch = LearningRateScheduler(scheduler)
+#reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,patience=5, min_lr=0.0001)
+#lr_sch = LearningRateScheduler(scheduler)
 
 
 def save_nn(model, name):
@@ -96,7 +95,7 @@ def train_nn(model, X, y, test_size=0.2, epochs=1000, batch_size=64, verbose=0):
 
     history = model.fit(
         np.array(X_train), np.array(y_train), validation_data=(X_valid,y_valid), epochs=epochs,
-         batch_size=batch_size, verbose=verbose)
+         batch_size=batch_size, class_weight={0:0.95, 1:0.05}, verbose=verbose)
     
     return model, history
 
@@ -174,9 +173,17 @@ def nn_concat():
 def nn_intro():
     
     model = Sequential()
-    model.add(Dense(128, input_dim=11, activation='relu'))
+    model.add(Dense(128, input_dim=13, activation='relu'))
     model.add(Dropout(.2))
     model.add(Dense(128, activation='relu'))
+    model.add(Dropout(.3))
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(.3))
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(.3))
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(.3))
+    model.add(Dense(256, activation='relu'))
     model.add(Dropout(.3))
     model.add(Dense(256, activation='relu'))
     model.add(Dropout(.3))

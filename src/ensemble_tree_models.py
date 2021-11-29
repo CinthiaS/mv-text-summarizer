@@ -1,4 +1,3 @@
-from src import tunning_hyperparametrs as th
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -8,33 +7,7 @@ import pickle
 import joblib
 from joblib import Parallel, delayed
 from sklearn.neural_network import MLPClassifier
-
-def tunning(model, X, y, name_model, section, path_to_save='models', parameters=None):
-
-    search = th.randomized_search (parameters, model, X, y)
-    joblib.dump(search, '{}/search_{}_{}.pkl'.format(path_to_save, name_model, section))
-
-    return search
-
-def pipeline(dataset, name_model, section, parameters=None):
-
-    if name_model == "gb":
-        model = GradientBoostingClassifier()
-    elif name_model == "rf":
-        model = RandomForestClassifier(n_jobs=n_jobs, class_weight=parameters['class_weight'])
-    elif name_model == 'ab':
-        model = AdaBoostClassifier()
-    elif name_model == 'knn':
-        model = KNeighborsClassifier(n_jobs=n_jobs)
-    elif name_model == 'svm':
-        model = SVC(class_weight=parameters['class_weight'])
-
-    X = dataset[section][0]
-    y = dataset[section][2]
-
-    search=tunning(model, X, y, section, parameters=None)
-
-    return  search
+from catboost import CatBoostClassifier
 
 
 def gb_classifier(
@@ -52,6 +25,22 @@ def gb_classifier(
     
     return gb
 
+def cb_classifier(X_train, y_train, section,parameters, path_to_save='models'):
+    
+    
+    cb = CatBoostClassifier(
+            iterations= parameters['cb'][section]['iterations'],
+            learning_rate= parameters['cb'][section]['learning_rate'],
+            depth= parameters['cb'][section]['depth'],
+            class_weights=parameters['cb'][section]['class_weights'],
+            min_data_in_leaf=parameters['cb'][section]['min_data_in_leaf'])
+    
+    cb.fit(X_train, y_train, verbose=False)
+    
+    pickle.dump(cb, open('{}/cb_{}.pkl'.format(path_to_save, section), 'wb'))
+    
+    return cb
+
 def rf_classifier(
         X_train, y_train, section, parameters, n_jobs=-1, path_to_save='models'):
     
@@ -68,6 +57,7 @@ def rf_classifier(
     pickle.dump(rf, open('{}/rf_{}.pkl'.format(path_to_save, section), 'wb'))
     
     return rf
+
 
 def ab_classifier(X_train, y_train, section, parameters, path_to_save='models'):
 
@@ -116,28 +106,35 @@ def knn_classifier(X_train, y_train, section, parameters, n_jobs=-1, path_to_sav
     
     return knn
 
-def pipeline_classifiers(X_train, y_train, parameters, section, name_model):
+def pipeline_classifiers(dataset, parameters, sections, name_models, path_to_save='models'):
     
-    trained = {}
+    models = {}
     
-    if name_model == 'knn':
-        trained['knn'] = knn_classifier(
-                X_train, y_train, section, parameters)
-    elif name_model == 'gb':
-        trained['gb'] = gb_classifier(
-                X_train, y_train, section, parameters)    
-    elif name_model == 'rf':   
-        trained['rf'] = rf_classifier(
-                X_train, y_train, section, parameters)
-    elif name_model == 'ab':    
-        trained['ab'] = ab_classifier(X_train, y_train, section, parameters)
-    elif name_model == 'mlp':
-        trained['mlp'] = mlp_classifier(X_train, y_train, section, parameters)
-    elif name_model == 'svm':
-        trained['svm'] = svm_classifier(X_train, y_train, section, parameters)
+    for section in sections:
         
+        trained = {}
+        X_train, y_train = dataset[section][0], dataset[section][2]
+        
+        for name_model in name_models:
+    
+            if name_model == 'knn':
+                trained['knn'] = knn_classifier(X_train, y_train, section, parameters, path_to_save=path_to_save)
+            elif name_model == 'gb':
+                trained['gb'] = gb_classifier(X_train, y_train, section, parameters, path_to_save=path_to_save)   
+            elif name_model == 'rf':   
+                trained['rf'] = rf_classifier(X_train, y_train, section, parameters, path_to_save=path_to_save)
+            elif name_model == 'ab':    
+                trained['ab'] = ab_classifier(X_train, y_train, section, parameters, path_to_save=path_to_save)
+            elif name_model == 'mlp':
+                trained['mlp'] = mlp_classifier(X_train, y_train, section, parameters, path_to_save=path_to_save)
+            elif name_model == 'svm':
+                trained['svm'] = svm_classifier(X_train, y_train, section, parameters, path_to_save=path_to_save)
+            elif name_model == 'cb':
+                trained['cb'] = cb_classifier(X_train, y_train, section, parameters, path_to_save=path_to_save)
+        
+        models[section]=trained
    
-    return trained
+    return models
 
 def create_models(dataset, parameters, sections, name_models):
     

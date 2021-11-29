@@ -31,12 +31,12 @@ def binarize_proba(df, name_models, k=3, sort_scores=True, ascending=False):
     for name_model in name_models:
 
         labels = []
-
+        j = 0
         for article in pd.unique(df['articles']):
 
             aux = df.loc[df['articles'] == article].reset_index(drop=True)
-            labels.append(create_label(aux, name_model, k, sort_scores, ascending))
-
+            labels.append(create_label(aux, name_model, k, sort_scores, ascending))    
+      
         merged = list(itertools.chain(*labels))
         df[name_model] = merged
         
@@ -106,10 +106,9 @@ def create_summaries(df, references, articles, name_models):
         
         df_summaries[name_model] = summaries
     
-    
-    df_summaries['references'] = references
     df_summaries['articles'] = articles
     
+    df_summaries = df_summaries.merge(references, on='articles')
     
     return  df_summaries
 
@@ -120,7 +119,9 @@ def combine_three_summ(summaries_intro, summaries_mat, summaries_conc, reference
     
         summaries_comb[name_model] = summaries_intro[name_model] + summaries_mat[name_model] + summaries_conc[name_model]
     
-    summaries_comb['references'] = references
+    summaries_comb['articles'] = summaries_intro['articles']
+    summaries_comb = summaries_comb.merge(references, on='articles')
+    
     return summaries_comb    
 
 
