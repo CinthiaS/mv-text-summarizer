@@ -9,6 +9,33 @@ rouge = RougeCalculator(stopwords=True, lang="en")
 from src import loader
 from src import preprocess
 
+import rouge
+
+evaluator = rouge.Rouge(metrics=['rouge-n', 'rouge-l'],
+                           max_n=2,
+                           limit_length=False,
+                           #length_limit_type='words',
+                           apply_avg=False,
+                           apply_best=False,
+                           alpha=0.5,
+                           weight_factor=1.2,
+                           stemming=True)
+
+def format_metrics(df, scores, name_model, metrics):
+    
+    for metric in metrics:
+        df['{}_{}'.format(name_model, metric)]= [score['f'][0] for score in scores[metric]]
+        
+    return df
+
+def evaluate_summariesv2(df, name_models, metrics):
+    
+    for name_model in name_models:
+        scores = evaluator.get_scores(df[name_model], df['references'])
+        df = format_metrics(df, scores, name_model, metrics)
+        
+    return df
+
 def create_label(df, name_model, k=3, sort_scores=True, ascending=False):
 
     label = [0 for i in range(len(df))]
@@ -28,14 +55,15 @@ def create_label(df, name_model, k=3, sort_scores=True, ascending=False):
 
 def binarize_proba(df, name_models, k=3, sort_scores=True, ascending=False):
     
+    grouped_df = df.groupby('articles')
+    
     for name_model in name_models:
 
         labels = []
         j = 0
-        for article in pd.unique(df['articles']):
+        for idx, group in grouped_df:
 
-            aux = df.loc[df['articles'] == article].reset_index(drop=True)
-            labels.append(create_label(aux, name_model, k, sort_scores, ascending))    
+            labels.append(create_label(group.reset_index(drop=True), name_model, k, sort_scores, ascending))    
       
         merged = list(itertools.chain(*labels))
         df[name_model] = merged
@@ -112,6 +140,7 @@ def create_summaries(df, references, articles, name_models):
     
     return  df_summaries
 
+
 def combine_three_summ(summaries_intro, summaries_mat, summaries_conc, references, name_models):
     summaries_comb = pd.DataFrame()
 
@@ -158,7 +187,7 @@ def rouge_metrics(candidate, reference):
     rouge_2 = rouge.rouge_n(summary=candidate, references=reference, n=2)
     rouge_l = rouge.rouge_l(summary=candidate, references=reference)
 
-    return rouge_1, rouge_2, rouge_l
+    return float(rouge_1), float(rouge_2), float(rouge_l)
 
 def evaluate_summaries(df, name_models):
 
@@ -166,7 +195,8 @@ def evaluate_summaries(df, name_models):
     
     for name_model in name_models:
         
-        df['{}_r1'.format(name_model)],df['{}_r2'.format(name_model)],df['{}_rl'.format(name_model)] = vfunc(df[name_model], df['references'])
-        
+        df['{}_r1'.format(name_model)] ,df['{}_r2'.format(name_model)], df['{}_rl'.format(name_model)] = vfunc(
+            df[name_model], df['references'])
+
     return df
 

@@ -18,6 +18,7 @@ LANGUAGE = "english"
 def format_df (text, features):
 
   scores = []
+
   data = {i: [] for i, j in features['sentences_text'].items()}
 
 
@@ -25,6 +26,7 @@ def format_df (text, features):
     
     data[key].append(value)
     data[key].append(features['sentences_lex'].get(key))
+    data[key].append(features['sentences_lsa'].get(key))
     data[key].append(features['onegram'][text.index(key)])
     data[key].append(features['two_gram'][text.index(key)])
     data[key].append(features['three_gram'][text.index(key)])
@@ -93,7 +95,6 @@ def main(text, xml, article_keywords, nlp_sm, nlp_md):
   one_gram = extract_features.keywords_yake(pp_text, n=1, lan='en')
   two_gram = extract_features.keywords_yake(pp_text, n=2, lan='en')
   three_gram = extract_features.keywords_yake(pp_text, n=3, lan='en')
- 
 
   one_gram = [key for key, _ in one_gram]
   two_gram = [key for key, _ in two_gram if len(key.split(' ')) > 1]
@@ -117,25 +118,38 @@ def main(text, xml, article_keywords, nlp_sm, nlp_md):
   summary_text, sentences_text = extract_features.text_rank(parser)
 
   #TextRank score
-  parser = PlaintextParser(" ".join(sentences), Tokenizer(LANGUAGE))
   summary_lex, sentences_lex = extract_features.lex_rank(parser)
+
+  summary_lsa, sentences_lsa = extract_features.lex_rank(parser)
 
   #Embeddings
   text = [preprocess.remove_noise(i) for i in text]
   embed = extract_features.sentence_embeddings(text_noise, nlp_md)
   df_embed = pd.DataFrame(embed)
 
-
   #Clustering 
   clustering = DBSCAN(eps=2, min_samples=2).fit(embed)
   cluster_df = cluster_analyzer.cluster_analisys(df_embed, clustering, normalize=False, verbose=False)
 
-  features = {'pos_score': pos_score, 'pos': pos, 'ner_score': ner_score, 'ners': ners,
+  features = {'pos_score': pos_score, 'ner_score': ner_score,
                 'position_score': position_score, 'number_citations':number_citations,
                 'paragraph_score': paragraph_score,  'length_score': length_score,
                 'onegram': ngrams[0], 'two_gram': ngrams[1], 'three_gram': ngrams[2],
-                'count_article_keywords': count_article_keywords, 'summary_text':summary_text,
-                'sentences_text':sentences_text, 'summary_lex': summary_lex, 'sentences_lex':sentences_lex,
+                'count_article_keywords': count_article_keywords, 
                 'cluster_df': cluster_df,  'result_tfisf':result_tfisf }
 
-  return features, df_embed
+
+ 
+  summ = {'sentences_text':sentences_text,   "sentences_lsa": sentences_lsa, 'sentences_lex':sentences_lex}
+
+
+  df = pd.DataFrame(features)
+  df['sentences'] = sentences
+
+  summ = pd.DataFrame(summ).reset_index()
+  summ = summ.rename(columns={'index': 'sentences'})
+
+  df = df.merge(summ, on='sentences')
+  
+
+  return df, df_embed

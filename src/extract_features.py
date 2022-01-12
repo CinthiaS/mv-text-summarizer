@@ -10,6 +10,7 @@ from sumy.sumy.summarizers.lsa import LsaSummarizer as SummarizerLsa
 from sumy.sumy.summarizers.lex_rank import LexRankSummarizer as SummarizerLex
 from sumy.sumy.summarizers.sum_basic import SumBasicSummarizer as SummarizerSumBasic
 from sumy.sumy.summarizers.text_rank import TextRankSummarizer  as SummarizerTextrank
+from sumy.sumy.summarizers.lsa import LsaSummarizer  as SummarizerLsa
 from sumy.sumy.nlp.stemmers import Stemmer
 from sumy.sumy.utils import get_stop_words
 
@@ -125,12 +126,11 @@ def pos_paragraph_score(sentences):
 
 def keywords_yake(text, n=3, lan='en'):
 
-  kw_extractor = yake.KeywordExtractor()
-  custom_kw_extractor = yake.KeywordExtractor(lan=lan, n=n, dedupLim=0.9, top=20, features=None)
-  keywords = custom_kw_extractor.extract_keywords(text)
+    kw_extractor = yake.KeywordExtractor()
+    custom_kw_extractor = yake.KeywordExtractor(lan=lan, n=n, dedupLim=0.9, top=20, features=None)
+    keywords = custom_kw_extractor.extract_keywords(text)
 
-  return keywords
-
+    return keywords
 
 def count_keywords(text, keywords):
 
@@ -146,13 +146,32 @@ def count_keywords(text, keywords):
 
 def tfisf(text):
 
-  vectorizer = TfidfVectorizer(stop_words=stop_words, analyzer='word', use_idf=True)
-  X = vectorizer.fit_transform(text)
+    vectorizer = TfidfVectorizer(stop_words=stop_words, analyzer='word', use_idf=True)
+    X = vectorizer.fit_transform(text)
 
-  df = pd.DataFrame(X.toarray(), columns=vectorizer.get_feature_names())
-  result = list(df.mean(axis=1))
+    df = pd.DataFrame(X.toarray(), columns=vectorizer.get_feature_names())
+    result = list(df.mean(axis=1))
 
-  return result
+    return result
+
+def get_summary(df, SENTENCES_COUNT, sentences_column='sentences', rating_column='ratings'):
+    
+    sentences  = df.sort_values(rating_column)[:SENTENCES_COUNT][sentences_column]
+    
+    return " ".join(sentences)
+
+def lsa_rank(parser):
+
+    stemmer = Stemmer(LANGUAGE)
+    summarizerlsa = SummarizerLsa(stemmer)
+    summarizerlsa.stop_words = get_stop_words(LANGUAGE)
+
+    result = summarizerlsa(parser.document, SENTENCES_COUNT)
+    summary = get_summary(result.copy(), SENTENCES_COUNT)
+    
+    sentences_scores = dict(zip(result.sentences, result.ratings))
+    
+    return summary, sentences_scores
 
 def lex_rank(parser):
     
@@ -161,10 +180,11 @@ def lex_rank(parser):
     summarizerLex.stop_words = get_stop_words(LANGUAGE)
 
     result = summarizerLex(parser.document, SENTENCES_COUNT)
+    summary = get_summary(result.copy(), SENTENCES_COUNT)
+    
+    sentences_scores = dict(zip(result.sentences, result.ratings))
 
-    summary, sentences = preprocess.format_result(result)
-
-    return summary, sentences
+    return summary, sentences_scores
 
 def text_rank(parser):
 
@@ -173,16 +193,17 @@ def text_rank(parser):
     summarizertext.stop_words = get_stop_words(LANGUAGE)
 
     result = summarizertext(parser.document, SENTENCES_COUNT)
+    summary = get_summary(result.copy(), SENTENCES_COUNT)
+    
+    sentences_scores = dict(zip(result.sentences, result.ratings))
 
-    summary, sentences = preprocess.format_result(result)
-
-    return summary, sentences
+    return summary, sentences_scores
 
 def sentence_embeddings(text, nlp):
 
-  embed = []
-  for i in text:
-    doc = nlp(i)
-    embed.append(doc.vector)
+    embed = []
+    for i in text:
+        doc = nlp(i)
+        embed.append(doc.vector)
     
-  return embed
+    return embed

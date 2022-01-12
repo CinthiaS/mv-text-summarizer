@@ -30,14 +30,10 @@ from src import create_features_df
 from src import transform_data
 from src import loader
 from src import utils
-#from src import gradient_boost
-#from src import random_forest
 from sklearn.preprocessing import StandardScaler
 
 import matplotlib.pyplot as plt
 import random
-
-from sklearn.model_selection import train_test_split
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -72,7 +68,7 @@ def extract_features_batches(
             #print(batch)
             features, scores, embeddings = vfunc(df['abstract'], df['texts'], df['keywords'], df['name_files'])
         
-        # Convert numpy array to dataframe
+            # Convert numpy array to dataframe
             features = [array_to_df(features[i], features_columns) for i in range(len(features))]
             scores = [array_to_df(scores[i], scores_columns) for i in range(len(scores))]
             embeddings = [array_to_df(embeddings[i], embeddings_columns) for i in range(len(scores))]
@@ -106,8 +102,7 @@ def extract_features_file(reference, section, keywords, number_text, verbose=Fal
 
     try:
 
-        features, embeddings = create_features_df.main(sentences, xml, keywords, nlp_sm, nlp_md)
-        features_df = create_features_df.format_df (sentences, features)
+        features_df, embeddings = create_features_df.main(sentences, xml, keywords, nlp_sm, nlp_md)
         features_df['number_text'] = [number_text]*len(features_df)
         embeddings['numbert_tex'] = [number_text]*len(features_df)
 
@@ -115,6 +110,8 @@ def extract_features_file(reference, section, keywords, number_text, verbose=Fal
         sentences_ref = list(map(str, sentences_ref[0]))
 
         scores_df, label = transform_data.main_create_label(sentences, sentences_ref, rouge)
+        
+        print(scores_df)
         scores_df['label'] = label
         scores_df['number_text'] = [number_text]*len(scores_df)
     

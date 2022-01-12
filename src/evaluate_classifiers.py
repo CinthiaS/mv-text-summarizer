@@ -9,7 +9,7 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import plot_roc_curve
 import matplotlib.pyplot as plt
 
-def evaluate_classification(X_test, y_test, model, name_section, name_model, columns_name, verbose=False):
+def evaluate_classification(X_test, y_test, model, name_section, name_model, verbose=False):
 
     results = {}
 
@@ -17,8 +17,8 @@ def evaluate_classification(X_test, y_test, model, name_section, name_model, col
         y_pred = model.predict(X_test)
     elif name_model == "mlp":
         y_pred = model.predict_classes(X_test)
-    y_proba = model.predict_proba(X_test)
     
+    y_proba = model.predict_proba(X_test)
     report = classification_report(y_test, y_pred, output_dict=True)
     report = pd.DataFrame(report).transpose()
     report.insert(loc=0, column='model', value=[name_model]*5)
@@ -28,7 +28,7 @@ def evaluate_classification(X_test, y_test, model, name_section, name_model, col
 
     return y_pred, y_proba, report
 
-def create_reports(models, dataset, columns_name, name_models, verbose=False):
+def create_reports(models, dataset, name_models, index_Xtest, index_ytest, verbose=False):
     
     results = {}
     predictions = {}
@@ -37,8 +37,8 @@ def create_reports(models, dataset, columns_name, name_models, verbose=False):
     for i in models.keys():
 
         model = models.get(i)
-        X = dataset.get(i)[1]
-        y = dataset.get(i)[3]
+        X = dataset.get(i)[index_Xtest]
+        y = dataset.get(i)[index_ytest]
         
         aux_predict = {}
         aux_results = {}
@@ -47,8 +47,7 @@ def create_reports(models, dataset, columns_name, name_models, verbose=False):
         for name_model in name_models:
 
             aux_predict[name_model], aux_predict_proba[name_model], aux_results[name_model] = evaluate_classification(
-                X, y, model[name_model], name_section=i, name_model=name_model,
-                columns_name=columns_name, verbose=verbose)
+                X, y, model[name_model], name_section=i, name_model=name_model, verbose=verbose)
             
         results[i] = aux_results
         predictions[i] = aux_predict
@@ -83,14 +82,14 @@ def convert_pred(y_pred):
     
     return y_pred
     
-def matthews(sections, dataset, predictions, name_models):
+def matthews(sections, dataset, predictions, name_models, index_ytest):
 
     result = {}
     
     for section in sections:
         
         aux = {}
-        y_test = dataset[section][3].copy()
+        y_test = dataset[section][index_ytest].copy()
         
         for name_model in name_models:
         

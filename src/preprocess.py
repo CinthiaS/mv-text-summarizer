@@ -3,7 +3,7 @@ import re
 from nltk.stem import PorterStemmer
 from bs4 import BeautifulSoup
 from src import tokenizer
-from src import extract_features
+#from src import extract_features
 
 def xml_to_text(text):
 
@@ -19,6 +19,7 @@ def remove_noise(text):
   text = re.sub('(?<=<title>)(.*?)(?=</title>)', '', text)
   text = re.sub('[^A-Za-z0-9]+', ' ', text)
   text = re.sub(r'[\t\n\r]', '', text)
+  text = str(text.encode('ascii', 'ignore'))
 
   text = text.lower()
 
@@ -75,6 +76,8 @@ def format_text(text, post_processing=False):
     text = text.replace("(;)", "")
     text = text.replace("(; )", "")
     text = re.sub(r' +', " ", text)
+    text = str(text.encode('ascii', 'ignore'))
+    
     text = text.strip()
 
   return text

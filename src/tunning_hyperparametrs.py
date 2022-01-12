@@ -12,17 +12,18 @@ def randomized_search (parameters, model, X_train, y_train, scoring='precision',
     
     return rsearch
 
-def pipeline_tunning(dataset, models, sections, all_parameters, path_to_save):
+def pipeline_tunning(dataset, models, sections, all_parameters, path_to_save, index_Xtrain, index_ytrain):
 
     for section in sections:
         
         for name_model in models.keys():
             
-            parameters = all_parameters[section][name_model]
+            parameters = all_parameters[name_model]
             model = models[name_model]
 
-            X = dataset[section][0]
-            y = dataset[section][2]
+            X = dataset[section][index_Xtrain]
+            y = dataset[section][index_ytrain]
 
+            
             search = randomized_search (parameters, model, X, y)
             joblib.dump(search, '{}/search_{}_{}.pkl'.format(path_to_save, name_model, section))

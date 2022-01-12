@@ -67,14 +67,11 @@ def save_results(all_features, all_scores, all_embeddings, batch, name_section='
     
         features_df = pd.concat(all_features)
         scores_df = pd.concat(all_scores)
-        #embeddings_df = pd.concat(all_embeddings)
 
         features_df.to_csv("../result/{}/features_{}.csv".format(
            name_section, batch), index=False)
         scores_df.to_csv("../result/{}/scores_{}.csv".format(
            name_section, batch), index=False)
-        #embeddings_df.to_csv("../result/{}/embeddings_{}.csv".format(
-        #   name_section, batch), index=False)
     
     except ValueError:
         
