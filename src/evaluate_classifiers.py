@@ -15,8 +15,6 @@ def evaluate_classification(X_test, y_test, model, name_section, name_model, ver
 
     if name_model != "mlp":
         y_pred = model.predict(X_test)
-    elif name_model == "mlp":
-        y_pred = model.predict_classes(X_test)
     
     y_proba = model.predict_proba(X_test)
     report = classification_report(y_test, y_pred, output_dict=True)

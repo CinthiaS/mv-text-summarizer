@@ -50,3 +50,45 @@ def bar_plot(y):
     df = pd.DataFrame.from_records(list(dict(count).items()), columns=['label','count'])
 
     ax = sns.barplot(x="label", y="count", data=df)
+    
+def load_keras_model(path_to_save, name_model, section, num_test):
+
+    json_file = open('{}/test_{}/{}_{}.json'.format(path_to_save, num_test, name_model, section), 'r')
+    model = json_file.read()
+    json_file.close()
+    model = model_from_json(model)
+    model.load_weights('{}/test_{}/{}_{}.h5'.format(path_to_save, num_test, name_model, section))
+    print("Loaded model from disk")
+    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(
+                            learning_rate=0.001), metrics=[keras.metrics.Precision()])
+    
+    return model
+
+def load_predict_models(dataset, sections, name_models, columns, path_to_save, num_test, index_Xtest):
+     
+    predictions_proba = {}
+    models = {}
+
+    for section in sections:
+
+        aux = {}
+        aux_models = {}
+        
+        X_test = dataset[section][index_Xtest]
+        
+        for name_model in name_models:
+
+            if (name_model != 'mlp') and (name_model != 'mlp_embed') and (name_model != 'mv_mlp_bert'):
+                model = joblib.load('{}/test_{}/{}_{}.pkl'.format(path_to_save, num_test, name_model, section))
+            else :
+                model = load_keras_model(path_to_save, name_model, section, num_test)
+
+            y_pred = model.predict(X_test)
+
+            aux[name_model] = y_pred
+            aux_models[name_model] = model
+
+        predictions_proba[section]= aux
+        models[section] = aux_models
+        
+    return predictions_proba, models

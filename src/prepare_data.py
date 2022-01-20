@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 from imblearn.under_sampling import RandomUnderSampler
 
 from src import normalization
-from src import ensemble_tree_models as classifiers
+from src import classifiers
 from src import utils_classification as utils_clf
 from src import utils
 from src import loader

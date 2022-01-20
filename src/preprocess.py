@@ -3,7 +3,7 @@ import re
 from nltk.stem import PorterStemmer
 from bs4 import BeautifulSoup
 from src import tokenizer
-#from src import extract_features
+from src import extract_features
 
 def xml_to_text(text):
 

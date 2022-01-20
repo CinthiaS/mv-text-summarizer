@@ -174,10 +174,14 @@ def create_df(name_models, x_summ, y_true, predictions, section, proba=False):
     if proba == False:
         for name_model in name_models:
             df[name_model] = predictions[section][name_model].reshape(1, -1)[0]
+
     else:
         for name_model in name_models:
-            y_pred = [i[1] for i in predictions[section][name_model]]
-            df[name_model] = y_pred
+            try:
+                y_pred = [i[1] for i in predictions[section][name_model]]
+                df[name_model] = y_pred
+            except IndexError:
+                df[name_model] = predictions[section][name_model].reshape(1, -1)[0]
         
     return df
         
@@ -199,4 +203,75 @@ def evaluate_summaries(df, name_models):
             df[name_model], df['references'])
 
     return df
+
+def create_df_v2(name_models, x_summ):
+    
+    df = pd.DataFrame({'sentences': x_summ['sentences'],
+                       'rouge_1': list(x_summ['rouge_1']),
+                       'articles': x_summ['articles']})
+    
+    for name_model in name_models:
+            df[name_model] = list(x_summ['rouge_1'])
+            
+    return df
+
+def summarization_target(
+    df, references, name_models, summ_items, sort_scores=False, proba=False, ascending=False):
+    
+    df = create_df_v2(name_models, df.copy())
+
+    df = summarization.binarize_proba(df.copy(), name_models, 3, sort_scores, ascending)
+
+    summaries = summarization.create_summaries(df, references, summ_items, name_models)
+    result = summarization.evaluate_summariesv2(summaries,  name_models, metrics=['rouge-1', 'rouge-2', 'rouge-l'])
+    
+    return df, summaries, result
+
+def combine_summaries_eval(
+    summaries_intro, summaries_mat, summaries_conc, references_df,
+    name_models = ['knn', 'rf', 'ab', 'gb', 'cb', 'mlp'], metrics=['rouge-1', 'rouge-2', 'rouge-l']):
+    
+    summaries = combine_three_summ(
+        summaries_intro, summaries_mat, summaries_conc, references_df, name_models)
+    result = evaluate_summariesv2(summaries, name_models, metrics)
+    
+    return summaries, result
+
+def format_data_to_summarize(dataset, section, index_Xtest):
+    
+    df = dataset[section][index_Xtest].reset_index(drop=True)
+    features = df[['sentences', 'articles']]
+    scores = pd.DataFrame()
+    scores['rouge_1'] = df['rouge_1']
+    
+    return features, scores
+
+def remove_ascii(text):
+    
+    try:
+        return re.sub(r'[^\x00-\x7F]+', '', text)
+    except:
+        return " "
+
+def pipeline_summarization(
+    features, scores, references, predictions, section, name_models,
+    summ_items, k=3, sort_scores=True, proba=False, ascending=False):
+    
+    X_test = features
+    y_test = scores
+    
+    vfunc = np.vectorize(remove_ascii)
+    X_test['sentences'] = vfunc(X_test['sentences'])
+
+    df_proba = create_df(name_models, X_test, y_test['rouge_1'], predictions, section, proba=proba)
+    
+    if proba:
+        df = binarize_proba(df_proba.copy(), name_models, k, sort_scores, ascending)
+    else:
+        df = df_proba.copy()
+        
+    summaries = create_summaries(df, references, summ_items, name_models)
+    result = evaluate_summariesv2(summaries, name_models, metrics=['rouge-1', 'rouge-2', 'rouge-l'])
+    
+    return df_proba, df, summaries, result
 
