@@ -106,7 +106,13 @@ def main_create_dataset(train_columns, under_columns, sections, path_to_read, na
                 section=section, train_columns=train_columns, under_columns=under_columns, summ_items=summ_items,
                 path_to_read=path_to_read, name_csv=name_csv, label_column='bin')
         
-        dataset[section] = [X_train, X_test, y_train, y_test, train, test]
+        
+        dataset[section] = {"X_train_features": X_train,
+                            "X_test_features": X_test,
+                            "y_train": y_train,
+                            "y_test": y_test,
+                            "X_train_nf": train,
+                            "X_test_nf": test}
 
         
     return dataset
