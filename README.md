@@ -4,7 +4,12 @@
 Steps
 
 1. Segment Dataset
-2. Extract Features: Extrai as features dos documentos segmentados e gera os rótulos das sentenças
+
+  ```
+  python create_dataset/segmentation.py
+  ```
+
+3. Extract Features: Extrai as features dos documentos segmentados e gera os rótulos das sentenças
 
   ```
   python src/main_extract_features.py
