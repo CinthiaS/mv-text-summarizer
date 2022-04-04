@@ -63,14 +63,14 @@ def concat_sections(section, train_columns, under_columns, summ_items, path_to_r
     return X_train, X_test, y_train, y_test, train, test
 
 def create_data_classification(
-    section, train_columns, under_columns, summ_items, path_to_read, name_csv="features", label_column='bin'):
+    section, train_columns, under_columns, summ_items, path_to_read, name_csv="features", label_column='label'):
     
-    dataset = pd.read_csv('dataset/dataset_{}.csv'.format(section))
+    dataset = pd.read_csv('{}/dataset_{}.csv'.format(path_to_read, section))
     
     train, test = utils.split_dataset (dataset, summ_items)
-    
-    train = utils_clf.transform_to_classification(train)
-    test = utils_clf.transform_to_classification(test)
+
+    #train = utils_clf.transform_to_classification(train)
+    #test = utils_clf.transform_to_classification(test)
     
     X_train, y_train = RandomUnderSampler(random_state=47).fit_resample(train[under_columns], train[label_column])
     
@@ -87,10 +87,7 @@ def create_data_classification(
     
     return X_train, X_test, y_train, y_test, train, test
 
-def main_create_dataset(train_columns, under_columns, sections, path_to_read, name_csv):
-    
-    summ_items = list(pd.read_csv("dataset/indices_summ.csv")['summ'])
-    print(len(summ_items))
+def main_create_dataset(train_columns, under_columns, sections, summ_items, path_to_read, name_csv):
 
     dataset = {}
 
@@ -104,7 +101,7 @@ def main_create_dataset(train_columns, under_columns, sections, path_to_read, na
         else:
             X_train, X_test, y_train, y_test, train, test = create_data_classification(
                 section=section, train_columns=train_columns, under_columns=under_columns, summ_items=summ_items,
-                path_to_read=path_to_read, name_csv=name_csv, label_column='bin')
+                path_to_read=path_to_read, name_csv=name_csv, label_column='label')
         
         
         dataset[section] = {"X_train_features": X_train,

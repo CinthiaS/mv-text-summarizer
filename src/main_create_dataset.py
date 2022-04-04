@@ -38,18 +38,16 @@ from src import prepare_data
 
 
 def main(
-    train_columns, under_columns, sections, path_to_read="mv-text-summarizer/dataset/",
-    name_csv="features", format_dataset=True, verbose=True):
+    train_columns, under_columns, sections, summ_items, path_to_read, path_to_save,
+    name_csv, format_dataset=True, verbose=True):
     
     start_time = datetime.now()
-    
-    dataset  = main(verbose=True, path_to_read=path_to_read, name_csv='features')
     
     if format_dataset:
         if verbose:
             print("Preparando dataset para os classificadores")
         dataset = prepare_data.main_create_dataset(
-            train_columns, under_columns, sections, path_to_read, name_csv)
+            train_columns, under_columns, sections, summ_items, path_to_read, name_csv)
     else:
         if verbose:
             print("Carregando dataset")
@@ -58,7 +56,7 @@ def main(
     if verbose:
         print("Treinamento dos modelos")
         
-    with open('dataset_{}.pkl'.format(name_csv), 'wb') as fp:
+    with open('{}/dataset_{}.pkl'.format(path_to_save, name_csv), 'wb') as fp:
         pickle.dump(dataset, fp, protocol=pickle.HIGHEST_PROTOCOL)
         
     end_time = datetime.now()

@@ -15,17 +15,6 @@ evaluator = rouge.Rouge(metrics=['rouge-n', 'rouge-l'],
                            weight_factor=1.2,
                            stemming=True)
 
-"""
-def evaluate_summary(candidate, reference, rouge):
-
-    rouge_1 = np.max([rouge.rouge_n(summary=candidate, references=j, n=1) for j in reference])
-    rouge_2 = np.max([rouge.rouge_n(summary=candidate, references=j, n=2) for j in reference])
-    rouge_l = np.max([rouge.rouge_l(summary=candidate, references=j)for j in reference])
-    #nubia_score = max([nubia.score(j, candidate) for j in reference])
-
-    return rouge_1, rouge_2, rouge_l
-"""
-
 def evaluate_summary(candidate, reference):
     
     r1 = []
@@ -39,7 +28,7 @@ def evaluate_summary(candidate, reference):
         r2.append(scores['rouge-2']['f'])
         rl.append(scores['rouge-l']['f'])
 
-    return np.max(r1), np.max(r2), np.max(rl)
+    return [np.max(r1), np.max(r2), np.max(rl)]
 
 def score_sentences (candidates, reference, rouge):
 
@@ -52,14 +41,6 @@ def score_sentences (candidates, reference, rouge):
       scores['rouge_1'].append(rouge_1)
       scores['rouge_2'].append(rouge_2)
       scores['rouge_l'].append(rouge_l)
-      #scores['nubia'].append(0)
-
-      #if rouge_1 == 0:
-      #  scores['nubia'].append(0)
-      #  scores['mean'].append( ((rouge_1 + 0)/2) + rouge_2)
-      #else:
-      #  scores['nubia'].append(nubia_score)
-      #  scores['mean'].append( ((rouge_1 + nubia_score)/2) + rouge_2)
 
     return scores
 
@@ -78,11 +59,8 @@ def create_label(scores_df):
 
     return label
 
-def main_create_label(candidate, reference, rouge):
+def main_create_label(df, reference, rouge):
 
-  scores = score_sentences(candidate, reference, rouge)
+    df['rouges'] = df['sentences'].apply(evaluate_summary, args=(reference,))
 
-  scores_df = pd.DataFrame(scores)
-  label = create_label(scores_df)
-
-  return scores_df, label
+    return df

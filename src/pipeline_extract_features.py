@@ -53,86 +53,50 @@ def array_to_df(array, columns_name):
     return pd.DataFrame(columns=columns_name)
 
 def extract_features_batches(
-    vfunc, batch, path_base, name_section, features_columns, scores_columns, embeddings_columns, verbose=True):
+    vfunc, data, path_base, name_section, verbose=True):
+    
+    features, features_columns,  embeddings, embeddings_columns = extract_features_file(
+            data.get('abstract'), data.get(name_section), data.get('keywords'), data.get('id'))
+        
+    
+    features = array_to_df(features, features_columns)
+    embeddings = array_to_df(embeddings, embeddings_columns) 
+        
+    return features, embeddings
+
+def extract_features_file(reference, sentences, keywords, number_text, verbose=False):
     
 
-    my_file = Path("../result/{}/features_{}.csv".format(name_section, batch))
-    
-    if not my_file.is_file():
-        
-        #Load Files
-        df = utils.load_batches(
-            batch, path_base, name_section)
-        
-        if verbose:
-            print("Total de arquivos: {} \n".format(df.shape))
-
-        
-        try:
-            #print(batch)
-            features, scores, embeddings = vfunc(df['abstract'], df['texts'], df['keywords'], df['name_files'])
-        
-        # Convert numpy array to dataframe
-            features = [array_to_df(features[i], features_columns) for i in range(len(features))]
-            scores = [array_to_df(scores[i], scores_columns) for i in range(len(scores))]
-            embeddings = [array_to_df(embeddings[i], embeddings_columns) for i in range(len(scores))]
-        
-            if len(features[0]) > 0:            
-                utils.save_results(
-                    features, scores, embeddings, batch=batch[0].replace('.json', ''),
-                    name_section=name_section, verbose=False)
-        except KeyError as error:
-            pass
-
-    
-def extract_features_file(reference, section, keywords, number_text, verbose=False):
-    
-    
-    xml = preprocess.format_xml(str(section))
-    text = preprocess.format_text(str(section), post_processing=False)
     reference = preprocess.format_text(str(reference), post_processing=True)
 
+    df = pd.DataFrame()
+    df['sentences'] = sentences
+    df['sentences'] = df['sentences'].apply(preprocess.clean_text)
+    
+    sentences = list(df['sentences'])
 
-    bibs = extract_features.get_citations(xml)
-    text = preprocess.replace_bib(text, bibs)
-    text = preprocess.format_text(text, post_processing=True)
-
-    soup = BeautifulSoup(text)
-    text = soup.get_text()
-
-    sentences = tokenizer.split_sentences([text])
-    sentences = list(map(str, sentences[0]))
-    sentences = preprocess.format_sentences(sentences)
-
-    try:
-
-        features, embeddings = create_features_df.main(sentences, xml, keywords, nlp_sm, nlp_md)
-        features_df = create_features_df.format_df (sentences, features)
-        features_df['number_text'] = [number_text]*len(features_df)
-        embeddings['numbert_tex'] = [number_text]*len(features_df)
+    if not df.empty and len(df) > 2:
+    
+        features_df, embeddings_df = create_features_df.main(df, nlp_sm, nlp_md)
+    
+        features_df['articles'] = [number_text]*len(features_df)
+        embeddings_df['articles'] = [number_text]*len(embeddings_df)
 
         sentences_ref = tokenizer.split_sentences([reference])
         sentences_ref = list(map(str, sentences_ref[0]))
 
-        scores_df, label = transform_data.main_create_label(sentences, sentences_ref, rouge)
-        scores_df['label'] = label
-        scores_df['number_text'] = [number_text]*len(scores_df)
+        features_df = transform_data.main_create_label(features_df, sentences_ref, rouge)
     
         features = features_df.to_numpy(dtype=object)
-        scores = scores_df.to_numpy(dtype=object)
-        embeddings = embeddings.to_numpy(dtype=object)
+        embeddings = embeddings_df.to_numpy(dtype=object)
 
-        return features, scores, embeddings
+        return features, features_df.columns, embeddings, embeddings_df.columns
+    
+    else:
+        out = pd.DataFrame().to_numpy(dtype=object)
+        return out, [], out, []
 
-    except IndexError as error:
-        out = pd.DataFrame().to_numpy(dtype=object)
-        return out, out, out
-    except ValueError as error:
-        out = pd.DataFrame().to_numpy(dtype=object)
-        return out, out, out
-    except KeyError as error:
-        out = pd.DataFrame().to_numpy(dtype=object)
-        return out, out, out
+
 
 def save_batches(batch_files):
     

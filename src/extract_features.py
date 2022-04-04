@@ -26,6 +26,11 @@ import yake
 from src import preprocess
 from src import tokenizer
 
+import spacy
+
+nlp_sm = spacy.load('en_core_web_sm')
+nlp_md = spacy.load('en_core_web_md')
+
 
 
 stop_words = list(stopwords.words('english'))
@@ -183,7 +188,7 @@ def lex_rank(parser):
     summary = get_summary(result.copy(), SENTENCES_COUNT)
     
     sentences_scores = dict(zip(result.sentences, result.ratings))
-
+    
     return summary, sentences_scores
 
 def text_rank(parser):
@@ -193,11 +198,10 @@ def text_rank(parser):
     summarizertext.stop_words = get_stop_words(LANGUAGE)
 
     result = summarizertext(parser.document, SENTENCES_COUNT)
-    summary = get_summary(result.copy(), SENTENCES_COUNT)
-    
-    sentences_scores = dict(zip(result.sentences, result.ratings))
 
-    return summary, sentences_scores
+    summary, sentences = preprocess.format_result(result)
+
+    return summary, sentences
 
 def sentence_embeddings(text, nlp):
 
@@ -207,3 +211,51 @@ def sentence_embeddings(text, nlp):
         embed.append(doc.vector)
     
     return embed
+
+
+def count_ner(sentences):
+    
+    doc = nlp_md(str(sentences))
+    
+    return len(doc.ents)
+
+def count_postag(sentence):
+    
+    count = {"NOUN": 0, "VERB": 0, "ADJ": 0, "ADV": 0}
+    
+    doc = nlp_sm(str(sentence))
+    count_aux = Counter([token.pos_ for token in doc])
+    
+    for i in count.keys():
+        if count_aux.get(i) == None:
+            count[i] = 0
+        else:
+            count[i] = count_aux.get(i)
+    
+    return count.get('NOUN') + count.get('VERB') + count.get("ADJ") + count.get("ADV")
+
+def score_len(sentence):
+
+    return len(tokenizer.split_words(sentence, nlp_md))
+
+def count_keywords(sentence, keywords):
+
+    n_keywords = []
+    count = 0
+    for key in keywords:
+        count += len(re.findall(str(key), str(sentence)))
+
+    return count
+
+def get_position_score(sentences):
+
+    position_score = []
+
+    for i in range(len(sentences) +1):
+    
+        if i <2 or i == len(sentences):
+            position_score.append(1)
+        elif i > 2 and i != len(sentences) +1:
+            position_score.append(1 - ((i-2)/len(sentences)))
+  
+    return position_score

@@ -12,6 +12,13 @@ def xml_to_text(text):
 
     return text
 
+def remove_unicode(text):
+
+    text = str(text).encode("ascii", "ignore")
+    text = text.decode()
+
+    return text
+
 def remove_noise(text):
 
   text = re.sub("^\d+\s|\s\d+\s|\s\d+$", " ", text)
@@ -56,6 +63,16 @@ def format_xml(xml):
   xml = xml.replace("<italic>et al</italic>.", "<italic>et al</italic>")
 
   return xml
+
+def clean_text(text):
+
+    text = re.sub(r'\@xcite', ' ', text)
+    text = re.sub(r'\[[^()]*\]', '', text)
+    text = re.sub(r'\W+', ' ', text)
+    text = re.sub(r'_', '', text)
+    text = re.sub(r'\s+', ' ', text)
+    
+    return text
 
 def format_text(text, post_processing=False):
 

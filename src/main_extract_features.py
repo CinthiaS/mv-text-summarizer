@@ -15,8 +15,6 @@ from bs4 import BeautifulSoup
 from pysbd.utils import PySBDFactory
 import math
 
-from sumeval.metrics.rouge import RougeCalculator
-rouge = RougeCalculator(stopwords=True, lang="en")
 import matplotlib.pyplot as plt
 import random
 
@@ -26,6 +24,7 @@ from sklearn.metrics import classification_report
 from sklearn.preprocessing import StandardScaler
 
 from src import pipeline_extract_features as pef
+from src import utils
 
 import joblib
 from joblib import Parallel, delayed
@@ -33,50 +32,112 @@ from joblib import Parallel, delayed
 import warnings
 warnings.filterwarnings("ignore")
 
-def extract_features(name_section, initial_batch, embed_dim, batch_len, path_base, verbose):
+def extract_features(sections, initial_batch, embed_dim, batch_len, path_base, name_file, verbose=False, dataset='arxiv'):
     
-    features_columns = ['sentences', 'sentences_text', 'sentences_lex', 'sentences_lsa',
-                        'count_one_gram', 'count_two_gram', 'count_three_gram', 
-                        'count_article_keywords', 'tf-isf', 'position_score', 
-                        'paragraph_score', 'number_citations', 'length_score', 'pos_score',
-                        'ner_score', 'dist_centroid', 'articles']
+    
+    features_columns = ['sentences', 'count_one_gram', 'count_two_gram', 'count_three_gram', 
+                        'tfisf', 'position_score', 'sentence_len', 'count_postag',
+                        'count_ner', 'text_rank', 'lex_rank', 'lsa_rank', 'dist_centroid', 'articles']
     
     scores_columns = ['rouge_1', 'rouge_2', 'rouge_l', 'label', 'articles']
     
     embeddings_columns = [i for i in range(embed_dim)]
     embeddings_columns.append("article")
     
-    batche_files = os.listdir(path_base)
+    print(name_file)
 
-    print("Name section: " + name_section)
     vfunc = np.vectorize(pef.extract_features_file)
     
-    print("Iniciando a extração de features...")
+    if (dataset == 'plosonev2') or (dataset == 'arxiv') or (dataset == 'pubmed'):
+        with open('{}/{}'.format(path_base, name_file, 'r')) as f:
+            files = f.readlines()
+    elif dataset == 'plosonev1':
+        files = load_files(path_base, name_file)
     
-    for batch in batche_files:
+    features_results = {'introduction': [], 'materials': [], 'conclusion': []}
+    embeddings_results = {'introduction': [], 'materials': [], 'conclusion': []}
+
+    count = 1
+    
+    with open(f'../../logs/log_{dataset}.txt','r') as f:
+        processed_files = f.readlines()
         
-        print(batch)
-
+    processed_files = [i.replace('\n', '') for i in processed_files]
     
-        pef.extract_features_batches(
-            vfunc, [batch], path_base, name_section=name_section, features_columns=features_columns,
-            scores_columns=scores_columns, embeddings_columns=embeddings_columns, verbose=verbose)
- 
+    for file in files:
+        
+        data = json.loads(file)
+        code = data.get('id')
+        
+        if not code in processed_files:
+             
+            with open(f'../../logs/log_{dataset}.txt','a') as f:
+                f.write(code + '\n')
+
+            for name_section in sections:
+    
+                features, embeddings = pef.extract_features_batches(
+                    vfunc, data, name_file, name_section=name_section, verbose=verbose)
+                
+                if not features.empty:
+                    features_results[name_section].append(features)
+                    embeddings_results[name_section].append(embeddings)
+                    count +=1
+                
+                if (count % 100 == 0) and (count != 0):
+                    print(count)
+              
+                    for name_sections_save in sections:
+                
+                        utils.save_results(
+                            features_results[name_sections_save], embeddings_results[name_sections_save],
+                            batch=name_file.replace('.txt', f'_{count}'), name_section=name_sections_save, dataset=dataset, verbose=False)
+                    
+                    features_results = {'introduction': [], 'materials': [], 'conclusion': []}
+                    embeddings_results = {'introduction': [], 'materials': [], 'conclusion': []}
 
 
-def main(sections, path_base, path_pp_data):
+                    count +=1
+        else:
+            count +=1
+            
+            if (count % 100 == 0) and (count != 0):
+                print('pass')
+            
+        
+
+def main(sections, path_base, path_pp_data, path_to_remove=[], dataset='plosone'):
     
     initial_batch=0
     
-    if not os.path.exists('../result'):
-        os.makedirs('../result')
-        os.makedirs('../result/introduction')
-        os.makedirs('../result/materials')
-        os.makedirs('../result/conclusion')
+    if not os.path.exists(f'../../result_{dataset}'):
+        os.makedirs(f'../../result_{dataset}')
+        os.makedirs(f'../../result_{dataset}/introduction')
+        os.makedirs(f'../../result_{dataset}/materials')
+        os.makedirs(f'../../result_{dataset}/conclusion')
         
     start_time = datetime.now()
+    
+    name_files = os.listdir(path_pp_data)
+    name_files.remove(".ipynb_checkpoints")
+    
+    for i in path_to_remove:
+        name_files.remove(i)
+
+    if (dataset == 'plosonev2') or (dataset == 'arxiv') or (dataset == 'pubmed'):
+        Parallel(n_jobs=10)(delayed(extract_features)(sections, initial_batch, 300, 700, path_base, name_file, False, dataset) for name_file in name_files)
         
-    Parallel(n_jobs=5)(delayed(extract_features)(s, initial_batch, 300, 700, path[0], False) for s in sections)
+        #for name_file in name_files:
+        #    extract_features(sections, initial_batch, 300, 700, path_base, name_file, False, dataset)
+        
+        
+            
+    elif dataset == 'plosonev1':
+        batches = utils.create_batches(path, tam=1000)
+        Parallel(n_jobs=12)(delayed(extract_features)(
+            sections, initial_batch, embed_dim=300, batch_len=700, path_base=path_base, name_file=name_file,
+            verbose=False, dataset=dataset) for batch in batches)
+
     
     end_time = datetime.now()
     print('Duration: {}'.format(end_time - start_time))
