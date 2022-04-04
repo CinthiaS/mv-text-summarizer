@@ -149,6 +149,9 @@ def create_representation(
 def main_autoencoder(
     dataset, sections, X1, X2, y, path_to_read='dataset', path_to_write='../autoencoder_test', bottleneck_dim=64):
     
+    
+    columns = [str(i) for i in range(300)]
+    
     for section in sections:
         
         X_features = dataset[section][X1]

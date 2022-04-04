@@ -61,21 +61,16 @@ def load_batches(files, path_base, name_section):
 
     return df
 
-def save_results(all_features, all_scores, all_embeddings, batch, name_section='intro', verbose=False):
+def save_results(all_features, all_embeddings, batch, name_section, dataset, verbose=False):
     
-    try:
-    
-        features_df = pd.concat(all_features)
-        scores_df = pd.concat(all_scores)
+    features_df = pd.concat(all_features)
+    #embeddings_df = pd.concat(all_embeddings)
 
-        features_df.to_csv("../result/{}/features_{}.csv".format(
-           name_section, batch), index=False)
-        scores_df.to_csv("../result/{}/scores_{}.csv".format(
-           name_section, batch), index=False)
+    features_df.to_csv(
+            "../../result_{}/{}/features_{}.csv".format(dataset, name_section, batch), index=False)
     
-    except ValueError:
-        
-        pass
+    # embeddings_df.to_csv(
+    #         "../../result_{}/{}/embeddings_{}.csv".format(dataset, name_section, batch), index=False)
 
 def join_dataset(X, y):
     

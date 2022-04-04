@@ -5,11 +5,18 @@ import re
 import json
 from sumeval.metrics.rouge import RougeCalculator
 rouge = RougeCalculator(stopwords=True, lang="en")
+from tensorflow import keras
+from tensorflow.keras.models import model_from_json
 
 from src import loader
 from src import preprocess
 
 import rouge
+
+import joblib
+from joblib import Parallel, delayed
+
+## evaluate
 
 evaluator = rouge.Rouge(metrics=['rouge-n', 'rouge-l'],
                            max_n=2,
@@ -35,6 +42,27 @@ def evaluate_summariesv2(df, name_models, metrics):
         df = format_metrics(df, scores, name_model, metrics)
         
     return df
+
+def rouge_metrics(candidate, reference):
+
+    rouge_1 = rouge.rouge_n(summary=candidate, references=reference, n=1)
+    rouge_2 = rouge.rouge_n(summary=candidate, references=reference, n=2)
+    rouge_l = rouge.rouge_l(summary=candidate, references=reference)
+
+    return float(rouge_1), float(rouge_2), float(rouge_l)
+
+def evaluate_summaries(df, name_models):
+
+    vfunc = np.vectorize(rouge_metrics)
+    
+    for name_model in name_models:
+        
+        df['{}_r1'.format(name_model)] ,df['{}_r2'.format(name_model)], df['{}_rl'.format(name_model)] = vfunc(
+            df[name_model], df['references'])
+
+    return df
+
+# Format
 
 def create_label(df, name_model, k=3, sort_scores=True, ascending=False):
 
@@ -98,6 +126,60 @@ def labeling_sentences(X, y, articles, model, name_model, columns_name, scaler):
     
     return df
 
+def format_data_to_summarize(dataset, section, index_Xtest):
+    
+    df = dataset[section][index_Xtest].reset_index(drop=True)
+    features = df[['sentences', 'articles']]
+    scores = pd.DataFrame()
+    scores['rouge_1'] = df['rouge_1']
+    
+    return features, scores
+
+# Load
+
+def load_keras_model(path_to_save, name_model, section, num_test):
+
+    json_file = open('{}/test_{}/{}_{}.json'.format(path_to_save, num_test, name_model, section), 'r')
+    model = json_file.read()
+    json_file.close()
+    model = model_from_json(model)
+    model.load_weights('{}/test_{}/{}_{}.h5'.format(path_to_save, num_test, name_model, section))
+    print("Loaded model from disk")
+    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(
+                            learning_rate=0.001), metrics=[keras.metrics.Precision()])
+    
+    return model
+
+def load_predict_models(dataset, sections, name_models, columns, path_to_save, num_test, index_Xtest):
+     
+    predictions_proba = {}
+    models = {}
+
+    for section in sections:
+
+        aux = {}
+        aux_models = {}
+        
+        X_test = dataset[section][index_Xtest]
+        
+        for name_model in name_models:
+
+            if (name_model != 'mlp') and (name_model != 'mlp_embed') and (name_model != 'mv_mlp_bert'):
+                model = joblib.load('{}/test_{}/{}_{}.pkl'.format(path_to_save, num_test, name_model, section))
+            else :
+                model = load_keras_model(path_to_save, name_model, section, num_test)
+
+            y_pred = model.predict(X_test)
+
+            aux[name_model] = y_pred
+            aux_models[name_model] = model
+
+        predictions_proba[section]= aux
+        models[section] = aux_models
+        
+    return predictions_proba, models
+
+
 def get_ref_summary(file_name, path_base):
 
     text, files = loader.load_files(path_base, [file_name])
@@ -139,6 +221,25 @@ def create_summaries(df, references, articles, name_models):
     df_summaries = df_summaries.merge(references, on='articles')
     
     return  df_summaries
+
+def create_summariesv2(df, name_models):
+    
+    grouped = df.groupby("articles")
+    summaries = {i : [] for i in name_models}
+    summaries['articles'] = []
+
+    for idx, group in grouped:
+
+        for name_model in name_models:
+
+            summary = " ".join(group.loc[group[name_model] == 1]['sentences'].tolist())
+            summaries[name_model].append(summary)
+
+        summaries['articles'].append(idx)
+
+    df_summaries = pd.DataFrame(summaries)
+    
+    return df_summaries
 
 
 def combine_three_summ(summaries_intro, summaries_mat, summaries_conc, references, name_models):
@@ -184,25 +285,6 @@ def create_df(name_models, x_summ, y_true, predictions, section, proba=False):
                 df[name_model] = predictions[section][name_model].reshape(1, -1)[0]
         
     return df
-        
-def rouge_metrics(candidate, reference):
-
-    rouge_1 = rouge.rouge_n(summary=candidate, references=reference, n=1)
-    rouge_2 = rouge.rouge_n(summary=candidate, references=reference, n=2)
-    rouge_l = rouge.rouge_l(summary=candidate, references=reference)
-
-    return float(rouge_1), float(rouge_2), float(rouge_l)
-
-def evaluate_summaries(df, name_models):
-
-    vfunc = np.vectorize(rouge_metrics)
-    
-    for name_model in name_models:
-        
-        df['{}_r1'.format(name_model)] ,df['{}_r2'.format(name_model)], df['{}_rl'.format(name_model)] = vfunc(
-            df[name_model], df['references'])
-
-    return df
 
 def create_df_v2(name_models, x_summ):
     
@@ -237,15 +319,6 @@ def combine_summaries_eval(
     
     return summaries, result
 
-def format_data_to_summarize(dataset, section, index_Xtest):
-    
-    df = dataset[section][index_Xtest].reset_index(drop=True)
-    features = df[['sentences', 'articles']]
-    scores = pd.DataFrame()
-    scores['rouge_1'] = df['rouge_1']
-    
-    return features, scores
-
 def remove_ascii(text):
     
     try:
@@ -274,4 +347,31 @@ def pipeline_summarization(
     result = evaluate_summariesv2(summaries, name_models, metrics=['rouge-1', 'rouge-2', 'rouge-l'])
     
     return df_proba, df, summaries, result
+
+def pipeline_summarizationv2(
+    features, scores, references, predictions, section, name_models,
+    k=3, sort_scores=True, proba=False, ascending=False):
+    
+    X_test = features
+    y_test = scores
+
+    df_proba = create_df(name_models, X_test, y_test['rouge_1'], predictions, section, proba=proba)
+    
+    if proba:
+        df = binarize_proba(df_proba.copy(), name_models, k, sort_scores, ascending)
+    else:
+        df = df_proba.copy()
+        
+    df_summaries = create_summariesv2(df, name_models)
+    
+    references['articles'] = references['articles'].astype(str)
+    df_summaries['articles'] = df_summaries['articles'].astype(str)
+    
+    df_summaries = df_summaries.merge(references, on='articles')
+    df_summaries['references'] = df_summaries['references'].str.replace("<S>", "")
+    df_summaries['references'] = df_summaries['references'].str.replace("</S>", "")
+    
+    result = evaluate_summariesv2(df_summaries, name_models, metrics=['rouge-1', 'rouge-2', 'rouge-l'])
+    
+    return df_proba, df, df_summaries, result
 
