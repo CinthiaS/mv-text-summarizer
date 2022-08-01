@@ -9,19 +9,19 @@ Steps
   python create_dataset/segmentation.py
   ```
 
-3. Extract Features: Extrai as features dos documentos segmentados e gera os rótulos das sentenças
+3. Extract Features: Extracts features from segmented documents and generates sentence labels
 
   ```
   python src/main_extract_features.py
   ```
   
-3. Create Dataset: Cria o dataset utilizado para treinamento dos algoritmos. Os dados serão normalizados e balanceados.
+3. Create Dataset: Creates the dataset used for training the algorithms. The data will be normalized and balanced.
   
   ```
   python src/main_create_dataset.py 
   ```
   
- - Input: Matrizes de features e lista com o nome dos arquivos utilizados como test.
+ - Input: Feature matrices and list with the name of the files used as test.
   
       dataset/introduction.csv
       dataset/materials.csv
@@ -37,7 +37,7 @@ Steps
                        X_test_nf: pd.DataFrame}
   ```
   
-4. Create embeddings:  As matrixes são adicionadas no dataframe anterior
+4. Create embeddings:  Arrays are added to the previous dataframe
 
   ```
   python src/create_embeddings.py 
@@ -54,7 +54,7 @@ Steps
                        X_test_embbed: pd.DataFrame}
   ```
   
-5. View Fusion:  As matrixes são adicionadas no dataframe anterior.
+5. View Fusion:  Arrays are added to the previous dataframe
 
   ```
   python src/autoencoders.py 
