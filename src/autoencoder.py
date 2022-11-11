@@ -43,7 +43,7 @@ def fit_autoencoder(X_embedd, X_features, y_train, bottleneck_dim, section, path
     e_3 = BatchNormalization()(e_3)
     e_3 = LeakyReLU()(e_3)
 
-    e_4 = Dense(X_features.shape[1]*2)(sequence_input2)
+    e_4 = Dense(X_features.shape[1]*2)(e_3)
     e_4 = BatchNormalization()(e_4)
     e_4 = LeakyReLU()(e_4)
 
