@@ -116,7 +116,7 @@ def mlp_classifier(
     perceptron_8 = Dense(256, activation='relu')(dropout7)
     dropout8 = Dropout(.3)(perceptron_8)
     perceptron_9 = Dense(256, activation='relu')(dropout8)
-    dropout9 = Dropout(.2)(perceptron_3)
+    dropout9 = Dropout(.2)(perceptron_9)
 
     preds = Dense(2, activation='sigmoid')(dropout9)
 
